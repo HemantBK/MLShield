@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy dependency files
 COPY pyproject.toml ./
 
-# Install Python dependencies
+# Install Python dependencies (CPU-only PyTorch to keep image small)
 RUN pip install --no-cache-dir --prefix=/install \
     fastapi[standard]>=0.104.0 \
     uvicorn>=0.24.0 \
@@ -28,7 +28,8 @@ RUN pip install --no-cache-dir --prefix=/install \
     httpx>=0.25.0 \
     structlog>=23.2.0 \
     rich>=13.7.0 \
-    click>=8.1.0
+    click>=8.1.0 \
+    slowapi>=0.1.9
 
 
 # ---- Stage 2: Production image ----
