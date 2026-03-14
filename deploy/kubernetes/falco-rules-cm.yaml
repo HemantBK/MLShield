@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: falco-mlshield-rules
+  namespace: mlshield
+  labels:
+    app.kubernetes.io/name: mlshield
+    app.kubernetes.io/component: falco-rules
+data:
+  mlshield_rules.yaml: |
+    # Custom Falco rules for ML weight exfiltration detection
+    # Deploy alongside Falco to generate alerts consumed by MLShield
+
+    - rule: ML Model Weight File Access
+      desc: Detect access to model weight files in production volumes
+      condition: >
+        (open_read or open_write) and
+        (fd.name startswith /models/production/ or
+         fd.name contains .safetensors or
+         fd.name contains .pt or
+         fd.name contains .onnx) and
+        not proc.name in (training-worker, checkpoint-saver)
+      output: >
+        Model weight file accessed (user=%user.name command=%proc.cmdline
+        file=%fd.name container=%container.name pod=%k8s.pod.name)
+      priority: CRITICAL
+      tags: [mlshield, weight_exfiltration]
+
+    - rule: Suspicious Model Conversion Tool
+      desc: Detect execution of model format conversion tools
+      condition: >
+        spawned_process and
+        (proc.cmdline contains "convert_to_onnx" or
+         proc.cmdline contains "torch.jit.save" or
+         proc.cmdline contains "onnx.export" or
+         proc.cmdline contains "ct2-opus-converter")
+      output: >
+        Model conversion tool executed (user=%user.name command=%proc.cmdline
+        container=%container.name pod=%k8s.pod.name)
+      priority: WARNING
+      tags: [mlshield, model_conversion]
+
+    - rule: Large Outbound Transfer from ML Pod
+      desc: Detect large outbound network transfers from ML training pods
+      condition: >
+        outbound and
+        k8s.pod.label.app = training and
+        evt.rawres > 104857600
+      output: >
+        Large outbound transfer from ML pod (user=%user.name
+        connection=%fd.name size=%evt.rawres pod=%k8s.pod.name)
+      priority: WARNING
+      tags: [mlshield, data_exfiltration]
+
+    - rule: Curl or Wget in ML Pod
+      desc: Detect download/upload tools in ML training containers
+      condition: >
+        spawned_process and
+        k8s.pod.label.app in (training, inference) and
+        proc.name in (curl, wget, nc, ncat, scp, rsync)
+      output: >
+        Network tool executed in ML pod (user=%user.name command=%proc.cmdline
+        container=%container.name pod=%k8s.pod.name)
+      priority: NOTICE
+      tags: [mlshield, suspicious_exec]
+
+    - rule: Credential Access from ML Pod
+      desc: Detect access to cloud credential secrets from ML pods
+      condition: >
+        open_read and
+        (fd.name contains aws-credentials or
+         fd.name contains gcp-credentials or
+         fd.name contains azure-credentials) and
+        k8s.pod.label.app in (training, inference)
+      output: >
+        Cloud credentials accessed from ML pod (user=%user.name
+        file=%fd.name container=%container.name pod=%k8s.pod.name)
+      priority: CRITICAL
+      tags: [mlshield, credential_theft]

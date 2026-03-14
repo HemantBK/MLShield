@@ -1,0 +1,65 @@
+# MLShield Docker Compose
+# Full stack: API server + Redis event bus + Prometheus monitoring
+
+version: "3.9"
+
+services:
+  # ---- MLShield API Server ----
+  mlshield:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mlshield-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MLSHIELD_CONFIG=/app/configs/demo_config.yaml
+      - MLSHIELD_REDIS_URL=redis://redis:6379
+      - MLSHIELD_LOG_LEVEL=INFO
+      - PYTHONPATH=/app/src
+      # Uncomment and set to enable Layer 3 LLM judge:
+      # - ANTHROPIC_API_KEY=sk-ant-...
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./benchmark/data/models:/app/benchmark/data/models:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ---- Redis (Event Bus) ----
+  redis:
+    image: redis:7-alpine
+    container_name: mlshield-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # ---- Prometheus (Metrics Collection) ----
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: mlshield-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./configs/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - mlshield
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  prometheus-data:

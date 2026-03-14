@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mlshield
+  labels:
+    app.kubernetes.io/name: mlshield
+    app.kubernetes.io/part-of: mlshield

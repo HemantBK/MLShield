@@ -1,0 +1,51 @@
+{
+  "total_trajectories": 2200,
+  "total_events": 110000,
+  "total_malicious_events": 10450,
+  "true_positives": 6150,
+  "false_positives": 0,
+  "false_negatives": 4300,
+  "true_negatives": 99550,
+  "detections_by_layer": {
+    "layer_1": 4050,
+    "layer_3": 1200,
+    "layer_2": 900
+  },
+  "detections_by_type": {
+    "credential_access": 750,
+    "unauthorized_access": 1200,
+    "unusual_gpu_pattern": 900,
+    "weight_access_outside_pipeline": 1850,
+    "suspicious_egress": 1450
+  },
+  "trajectories_with_detection": 500,
+  "malicious_trajectories": 700,
+  "precision": 1.0,
+  "recall": 0.5885167464114832,
+  "f1": 0.7409638554216867,
+  "accuracy": 0.9609090909090909,
+  "latency_p50_ms": 0.017799990018829703,
+  "latency_p95_ms": 0.04149999585933983,
+  "latency_p99_ms": 17.987413002119858,
+  "cascade_stats": {
+    "total_events": 110000,
+    "layer1_cleared_pct": 93.72727272727272,
+    "layer2_processed_pct": 2.590909090909091,
+    "layer3_processed_pct": 1.090909090909091
+  },
+  "temporal_metrics": {
+    "total_detections": 6150,
+    "early_intervention_rate": 1.0,
+    "detection_gap": {
+      "mean": 2.142857142857143,
+      "median": 0.0,
+      "max": 5
+    },
+    "damage_prevented_pct": 97.47899159663865,
+    "detections_by_layer": {
+      "layer_1": 4050,
+      "layer_3": 1200,
+      "layer_2": 900
+    }
+  }
+}

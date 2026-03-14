@@ -1,0 +1,12 @@
+# Prometheus configuration for MLShield
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "mlshield"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["mlshield:8000"]
+        labels:
+          instance: "mlshield-api"

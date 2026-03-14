@@ -1,0 +1,69 @@
+# configs/default_specs.yaml
+# MLShield Behavioral Specifications for ML Training Jobs
+
+specs:
+  - name: standard_training
+    description: "Standard model training job behavioral profile"
+    job_type: training
+    match:
+      labels:
+        app: training
+      namespace_pattern: "ml-*"
+
+    allowed_behaviors:
+      # Who can access what
+      data_access:
+        allowed_paths:
+          - "/data/training/*"
+          - "/models/checkpoints/*"
+        denied_paths:
+          - "/models/production/*"     # No access to prod weights
+          - "/secrets/*"
+        allowed_operations: ["read", "write"]
+
+      # Expected GPU profile
+      gpu_profile:
+        utilization_range: [60, 100]    # Expected GPU util %
+        memory_range_pct: [40, 95]      # Expected VRAM usage %
+        expected_gpu_count: [1, 8]
+        max_nvlink_bandwidth_spike: 3.0  # x baseline
+
+      # Network behavior
+      network:
+        allowed_egress:
+          - "*.internal.cluster"
+          - "registry.internal"
+        denied_egress:
+          - "*.s3.amazonaws.com"        # No direct S3 uploads
+          - "*.blob.core.windows.net"   # No Azure blob uploads
+          - "*huggingface.co"           # No HF uploads during training
+        max_egress_rate_mbps: 100
+
+      # Checkpoint behavior
+      checkpoints:
+        max_frequency_minutes: 10       # No more than 1 checkpoint per 10 min
+        allowed_formats: [".pt", ".safetensors"]
+        max_size_gb: 50
+        must_be_encrypted: true
+
+    # What triggers an alert
+    violations:
+      - type: weight_access_outside_pipeline
+        description: "Model weights accessed outside approved training pipeline"
+        severity: critical
+        condition: "data_access to /models/ from non-training pod"
+
+      - type: unusual_gpu_pattern
+        description: "GPU utilization doesn't match declared job type"
+        severity: high
+        condition: "gpu_util < 20% for training job (possible distillation setup)"
+
+      - type: suspicious_egress
+        description: "Outbound network to unauthorized destination"
+        severity: critical
+        condition: "egress to denied destination"
+
+      - type: checkpoint_anomaly
+        description: "Abnormal checkpoint creation pattern"
+        severity: medium
+        condition: "checkpoint frequency > max or format not in allowed list"

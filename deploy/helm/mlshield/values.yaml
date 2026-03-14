@@ -1,0 +1,73 @@
+# MLShield Helm chart default values
+
+replicaCount: 1
+
+image:
+  repository: mlshield
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 2Gi
+
+config:
+  logLevel: INFO
+  specPath: /app/configs/default_specs.yaml
+  layer2Threshold: "0.6"
+  layer3Threshold: "0.8"
+
+# Redis event bus
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: 7-alpine
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+# DCGM GPU exporter
+dcgmExporter:
+  enabled: true
+  image:
+    repository: nvcr.io/nvidia/k8s/dcgm-exporter
+    tag: 3.3.0-3.2.0-ubuntu22.04
+
+# Prometheus monitoring
+prometheus:
+  enabled: false
+  scrapeInterval: 15s
+
+# Layer 3 LLM judge
+llm:
+  enabled: false
+  # Set via --set llm.apiKey=sk-ant-...
+  apiKey: ""
+  model: claude-sonnet-4-20250514
+
+# K8s audit log ingestion
+auditLog:
+  hostPath: /var/log/kubernetes
+
+# Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8000"
+  prometheus.io/path: "/metrics"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

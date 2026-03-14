@@ -1,0 +1,179 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Events Processed (by Layer)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "rate(mlshield_events_total[5m])",
+          "legendFormat": "Layer {{layer}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      }
+    },
+    {
+      "title": "Threats Detected (by Type)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {
+          "expr": "rate(mlshield_threats_total[5m])",
+          "legendFormat": "{{type}} ({{severity}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "title": "Detection Latency",
+      "type": "histogram",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+      "targets": [
+        {
+          "expr": "mlshield_detection_latency_ms_bucket",
+          "legendFormat": "{{le}}ms",
+          "format": "heatmap"
+        }
+      ]
+    },
+    {
+      "title": "Early Intervention Rate (EIR)",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 4, "x": 8, "y": 8},
+      "targets": [
+        {
+          "expr": "mlshield_eir",
+          "legendFormat": "EIR"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "orange", "value": 0.5},
+              {"color": "yellow", "value": 0.7},
+              {"color": "green", "value": 0.9}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Cascade Efficiency (% Cleared by Layer 1)",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 4, "x": 12, "y": 8},
+      "targets": [
+        {
+          "expr": "mlshield_cascade_layer1_pct",
+          "legendFormat": "Layer 1 %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "orange", "value": 70},
+              {"color": "green", "value": 90}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Total Events Processed",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 8},
+      "targets": [
+        {
+          "expr": "sum(mlshield_events_total)",
+          "legendFormat": "Events"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "title": "Total Threats Detected",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 20, "y": 8},
+      "targets": [
+        {
+          "expr": "sum(mlshield_threats_total)",
+          "legendFormat": "Threats"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "fixed", "fixedColor": "red"}
+        }
+      }
+    },
+    {
+      "title": "Threat Severity Distribution",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 12},
+      "targets": [
+        {
+          "expr": "sum by (severity) (mlshield_threats_total)",
+          "legendFormat": "{{severity}}"
+        }
+      ]
+    },
+    {
+      "title": "Detection Latency P95",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 12},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(mlshield_detection_latency_ms_bucket[5m]))",
+          "legendFormat": "P95"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        }
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["mlshield", "security", "ml-infrastructure"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "MLShield - ML Security Monitoring",
+  "uid": "mlshield-main",
+  "version": 1
+}

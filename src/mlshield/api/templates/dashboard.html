@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLShield - Security Monitor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e17;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+            border-bottom: 1px solid #21262d;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #58a6ff, #3fb950);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header .status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #3fb950;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.disconnected { background: #f85149; animation: none; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main layout */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto 1fr;
+            gap: 16px;
+            padding: 24px 32px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Cards */
+        .card {
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .card h2 {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #8b949e;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        /* Stats row */
+        .stats-row {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+        }
+        .stat-card {
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-card .value {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .stat-card .label {
+            font-size: 12px;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .stat-card.threat .value { color: #f85149; }
+        .stat-card.safe .value { color: #3fb950; }
+        .stat-card.info .value { color: #58a6ff; }
+        .stat-card.warn .value { color: #d29922; }
+
+        /* Cascade gauge */
+        .cascade-row {
+            grid-column: 1 / -1;
+        }
+        .cascade-bars {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        .cascade-bar {
+            flex: 1;
+            position: relative;
+        }
+        .cascade-bar .bar-label {
+            font-size: 13px;
+            color: #8b949e;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .cascade-bar .bar-bg {
+            height: 28px;
+            background: #0d1117;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .cascade-bar .bar-fill {
+            height: 100%;
+            border-radius: 14px;
+            transition: width 0.8s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .bar-l1 { background: linear-gradient(90deg, #238636, #3fb950); }
+        .bar-l2 { background: linear-gradient(90deg, #1f6feb, #58a6ff); }
+        .bar-l3 { background: linear-gradient(90deg, #9e6a03, #d29922); }
+
+        /* Alert feed */
+        .alert-feed {
+            grid-column: 1 / -1;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .alert-list { list-style: none; }
+        .alert-item {
+            display: grid;
+            grid-template-columns: 100px 80px 1fr 120px 80px;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #21262d;
+            font-size: 13px;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .alert-item:hover { background: #1c2128; }
+        .alert-time { color: #8b949e; font-family: monospace; }
+        .severity-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .severity-critical { background: rgba(248,81,73,0.15); color: #f85149; border: 1px solid rgba(248,81,73,0.3); }
+        .severity-high { background: rgba(210,153,34,0.15); color: #d29922; border: 1px solid rgba(210,153,34,0.3); }
+        .severity-medium { background: rgba(88,166,255,0.15); color: #58a6ff; border: 1px solid rgba(88,166,255,0.3); }
+        .severity-low { background: rgba(63,185,80,0.15); color: #3fb950; border: 1px solid rgba(63,185,80,0.3); }
+        .alert-desc { color: #c9d1d9; }
+        .alert-layer {
+            font-family: monospace;
+            color: #8b949e;
+            text-align: right;
+        }
+        .alert-confidence {
+            font-family: monospace;
+            text-align: right;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #484f58;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0d1117; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .stats-row { grid-template-columns: repeat(3, 1fr); }
+            .main { padding: 16px; }
+        }
+        @media (max-width: 768px) {
+            .main { grid-template-columns: 1fr; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .alert-item { grid-template-columns: 80px 70px 1fr; }
+            .alert-layer, .alert-confidence { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MLShield</h1>
+        <div class="status">
+            <span id="ws-status-text">Connecting...</span>
+            <div class="status-dot disconnected" id="ws-status-dot"></div>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-card info">
+                <div class="value" id="stat-events">0</div>
+                <div class="label">Events Processed</div>
+            </div>
+            <div class="stat-card threat">
+                <div class="value" id="stat-threats">0</div>
+                <div class="label">Threats Detected</div>
+            </div>
+            <div class="stat-card safe">
+                <div class="value" id="stat-precision">--</div>
+                <div class="label">Precision</div>
+            </div>
+            <div class="stat-card warn">
+                <div class="value" id="stat-eir">--</div>
+                <div class="label">Early Intervention</div>
+            </div>
+            <div class="stat-card info">
+                <div class="value" id="stat-uptime">0s</div>
+                <div class="label">Uptime</div>
+            </div>
+        </div>
+
+        <!-- Cascade Efficiency -->
+        <div class="card cascade-row">
+            <h2>Cascade Efficiency</h2>
+            <div class="cascade-bars">
+                <div class="cascade-bar">
+                    <div class="bar-label">
+                        <span>Layer 1 - Static Rules</span>
+                        <span id="cascade-l1-pct">0%</span>
+                    </div>
+                    <div class="bar-bg">
+                        <div class="bar-fill bar-l1" id="cascade-l1-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="cascade-bar">
+                    <div class="bar-label">
+                        <span>Layer 2 - ML Model</span>
+                        <span id="cascade-l2-pct">0%</span>
+                    </div>
+                    <div class="bar-bg">
+                        <div class="bar-fill bar-l2" id="cascade-l2-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="cascade-bar">
+                    <div class="bar-label">
+                        <span>Layer 3 - LLM Judge</span>
+                        <span id="cascade-l3-pct">0%</span>
+                    </div>
+                    <div class="bar-bg">
+                        <div class="bar-fill bar-l3" id="cascade-l3-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Feed -->
+        <div class="card alert-feed">
+            <h2>Live Alert Feed</h2>
+            <div id="alert-container">
+                <div class="empty-state" id="empty-state">
+                    <div class="icon">&#128737;</div>
+                    <p>No alerts yet. Monitoring for threats...</p>
+                </div>
+                <ul class="alert-list" id="alert-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ---- State ----
+        let ws = null;
+        let reconnectTimer = null;
+        let statsTimer = null;
+        let alertCount = 0;
+
+        // ---- WebSocket ----
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/alerts`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                document.getElementById('ws-status-dot').classList.remove('disconnected');
+                document.getElementById('ws-status-text').textContent = 'Connected';
+                if (reconnectTimer) clearTimeout(reconnectTimer);
+            };
+
+            ws.onclose = () => {
+                document.getElementById('ws-status-dot').classList.add('disconnected');
+                document.getElementById('ws-status-text').textContent = 'Disconnected';
+                reconnectTimer = setTimeout(connectWebSocket, 3000);
+            };
+
+            ws.onerror = () => {
+                ws.close();
+            };
+
+            ws.onmessage = (event) => {
+                const alert = JSON.parse(event.data);
+                if (alert.type === 'pong') return;
+                addAlert(alert);
+            };
+        }
+
+        // ---- Alert rendering ----
+        function addAlert(alert) {
+            const list = document.getElementById('alert-list');
+            const empty = document.getElementById('empty-state');
+            if (empty) empty.style.display = 'none';
+
+            const li = document.createElement('li');
+            li.className = 'alert-item';
+
+            const time = alert.timestamp ? new Date(alert.timestamp).toLocaleTimeString() : '--:--:--';
+            const severity = alert.severity || 'medium';
+            const conf = (alert.confidence * 100).toFixed(0);
+
+            li.innerHTML = `
+                <span class="alert-time">${time}</span>
+                <span class="severity-badge severity-${severity}">${severity}</span>
+                <span class="alert-desc">${escapeHtml(alert.description || alert.threat_type || 'Unknown')}</span>
+                <span class="alert-layer">Layer ${alert.detected_by_layer}</span>
+                <span class="alert-confidence">${conf}%</span>
+            `;
+
+            list.insertBefore(li, list.firstChild);
+            alertCount++;
+
+            // Keep max 200 items in DOM
+            while (list.children.length > 200) {
+                list.removeChild(list.lastChild);
+            }
+
+            // Update threat counter
+            document.getElementById('stat-threats').textContent = alertCount;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ---- Stats polling ----
+        async function fetchStats() {
+            try {
+                const [healthRes, statsRes, temporalRes] = await Promise.all([
+                    fetch('/health'),
+                    fetch('/api/v1/stats'),
+                    fetch('/api/v1/stats/temporal'),
+                ]);
+
+                if (healthRes.ok) {
+                    const health = await healthRes.json();
+                    document.getElementById('stat-events').textContent =
+                        formatNumber(health.total_events_processed);
+                    document.getElementById('stat-threats').textContent =
+                        formatNumber(health.total_threats_detected);
+                    document.getElementById('stat-uptime').textContent =
+                        formatUptime(health.uptime_seconds);
+                    alertCount = health.total_threats_detected;
+                }
+
+                if (statsRes.ok) {
+                    const stats = await statsRes.json();
+                    const l1 = stats.layer1_cleared_pct.toFixed(1);
+                    const l2 = stats.layer2_processed_pct.toFixed(1);
+                    const l3 = stats.layer3_processed_pct.toFixed(1);
+
+                    document.getElementById('cascade-l1-pct').textContent = l1 + '%';
+                    document.getElementById('cascade-l2-pct').textContent = l2 + '%';
+                    document.getElementById('cascade-l3-pct').textContent = l3 + '%';
+
+                    document.getElementById('cascade-l1-bar').style.width = l1 + '%';
+                    document.getElementById('cascade-l2-bar').style.width = Math.min(l2 * 10, 100) + '%';
+                    document.getElementById('cascade-l3-bar').style.width = Math.min(l3 * 20, 100) + '%';
+                }
+
+                if (temporalRes.ok) {
+                    const temporal = await temporalRes.json();
+                    const eir = temporal.early_intervention_rate;
+                    document.getElementById('stat-eir').textContent =
+                        eir > 0 ? (eir * 100).toFixed(0) + '%' : '--';
+                }
+
+            } catch (e) {
+                // Server not responding
+            }
+        }
+
+        // Load initial alerts
+        async function loadAlerts() {
+            try {
+                const res = await fetch('/api/v1/alerts?limit=50');
+                if (res.ok) {
+                    const data = await res.json();
+                    data.alerts.reverse().forEach(addAlert);
+                }
+            } catch (e) {
+                // Ignore
+            }
+        }
+
+        // ---- Formatters ----
+        function formatNumber(n) {
+            if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+            if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+            return n.toString();
+        }
+
+        function formatUptime(seconds) {
+            if (seconds < 60) return Math.floor(seconds) + 's';
+            if (seconds < 3600) return Math.floor(seconds / 60) + 'm';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h';
+            return Math.floor(seconds / 86400) + 'd';
+        }
+
+        // ---- Init ----
+        connectWebSocket();
+        loadAlerts();
+        fetchStats();
+        statsTimer = setInterval(fetchStats, 5000);
+
+        // Keep WebSocket alive
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send('ping');
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

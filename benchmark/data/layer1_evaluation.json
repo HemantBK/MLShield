@@ -1,0 +1,35 @@
+{
+  "total_trajectories": 2200,
+  "total_events": 110000,
+  "total_malicious_events": 10450,
+  "true_positives": 6900,
+  "false_positives": 0,
+  "false_negatives": 3550,
+  "true_negatives": 99550,
+  "detections_by_type": {
+    "credential_access": 750,
+    "unusual_gpu_pattern": 2250,
+    "weight_access_outside_pipeline": 1850,
+    "suspicious_exec": 600,
+    "suspicious_egress": 1450
+  },
+  "missed_by_type": {
+    "unauthorized_access": 750,
+    "model_extraction": 700,
+    "suspicious_egress": 300,
+    "data_poisoning": 400,
+    "config_tampering": 400,
+    "log_tampering": 400,
+    "checkpoint_anomaly": 600
+  },
+  "trajectories_with_detection": 500,
+  "malicious_trajectories": 700,
+  "precision": 1.0,
+  "recall": 0.6602870813397129,
+  "f1": 0.7953890489913544,
+  "accuracy": 0.9677272727272728,
+  "latency_p50_us": 12.4,
+  "latency_p95_us": 18.9,
+  "latency_p99_us": 29.6,
+  "latency_mean_us": 13.14350090909091
+}

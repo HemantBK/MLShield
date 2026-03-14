@@ -1,0 +1,31 @@
+# configs/rules/gpu_anomaly.yaml
+# Rules for GPU usage anomalies
+
+rules:
+  - name: low_gpu_util_training
+    description: "Training job with suspiciously low GPU utilization (possible distillation)"
+    severity: high
+    conditions:
+      - job_type: "training"
+      - metric: "DCGM_FI_DEV_GPU_UTIL"
+        operator: "<"
+        value: 20
+    window_minutes: 5
+
+  - name: gpu_temperature_spike
+    description: "GPU temperature exceeding safe threshold"
+    severity: high
+    conditions:
+      - metric: "DCGM_FI_DEV_GPU_TEMP"
+        operator: ">"
+        value: 85
+    window_minutes: 2
+
+  - name: memory_exhaustion
+    description: "GPU memory usage near maximum (potential side-channel)"
+    severity: medium
+    conditions:
+      - metric: "DCGM_FI_DEV_MEM_COPY_UTIL"
+        operator: ">"
+        value: 98
+    window_minutes: 10

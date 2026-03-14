@@ -1,0 +1,16 @@
+# configs/demo_config.yaml
+# Demo environment configuration for MLShield
+
+spec_path: "/app/configs/default_specs.yaml"
+k8s_audit_log_path: ""  # Empty = use synthetic events
+dcgm_url: "http://localhost:9400/metrics"
+dcgm_poll_interval: 5.0
+redis_url: "redis://redis:6379"
+layer2_threshold: 0.6
+layer3_threshold: 0.8
+llm_api_url: "https://api.anthropic.com/v1/messages"
+llm_model: "claude-sonnet-4-20250514"
+api_host: "0.0.0.0"
+api_port: 8000
+log_level: "INFO"
+log_json: true

@@ -1,0 +1,29 @@
+# configs/rules/data_staging.yaml
+# Rules for suspicious data staging
+
+rules:
+  - name: unauthorized_format_conversion
+    description: "Model converted to portable format (ONNX, TorchScript) outside pipeline"
+    severity: high
+    conditions:
+      - action_in: ["k8s_exec", "k8s_create"]
+      - detail_key: "command"
+        contains_any: ["convert_to_onnx", "torch.jit.save", "onnx.export"]
+
+  - name: checkpoint_frequency_violation
+    description: "Checkpoints created more frequently than allowed"
+    severity: medium
+    conditions:
+      - action: "k8s_create"
+      - resource_pattern: "persistentvolumeclaims/checkpoint*"
+    rate_limit:
+      max_count: 1
+      window_minutes: 10
+
+  - name: unusual_checkpoint_format
+    description: "Checkpoint saved in non-standard format"
+    severity: medium
+    conditions:
+      - action: "k8s_create"
+      - resource_pattern: "persistentvolumeclaims/checkpoint*"
+      - resource_not_endswith: [".pt", ".safetensors"]

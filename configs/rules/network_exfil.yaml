@@ -1,0 +1,30 @@
+# configs/rules/network_exfil.yaml
+# Rules for network exfiltration detection
+
+rules:
+  - name: denied_egress_destination
+    description: "Network egress to explicitly denied destination"
+    severity: critical
+    conditions:
+      - action: "network_egress"
+      - destination_pattern:
+          - "*.s3.amazonaws.com"
+          - "*.blob.core.windows.net"
+          - "*huggingface.co"
+
+  - name: large_outbound_transfer
+    description: "Unusually large outbound data transfer"
+    severity: high
+    conditions:
+      - action: "network_egress"
+      - detail_key: "bytes_sent"
+        operator: ">"
+        value: 1000000000   # 1GB
+
+  - name: unusual_egress_timing
+    description: "Network egress during non-business hours"
+    severity: medium
+    conditions:
+      - action: "network_egress"
+      - time_range:
+          outside: "08:00-20:00"

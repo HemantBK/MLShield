@@ -1,0 +1,27 @@
+# configs/rules/weight_access.yaml
+# Rules for detecting unauthorized weight file access
+
+rules:
+  - name: production_weight_access
+    description: "Access to production model weights from non-approved pods"
+    severity: critical
+    conditions:
+      - resource_pattern: "/models/production/*"
+      - action_in: ["k8s_get", "k8s_list", "k8s_create", "k8s_update"]
+    exceptions:
+      - pod_label: "mlshield.io/approved-weight-access=true"
+
+  - name: weight_copy_to_external
+    description: "Model weights being copied to external storage"
+    severity: critical
+    conditions:
+      - detail_key: "is_weight_access"
+        detail_value: true
+      - action: "network_egress"
+
+  - name: bulk_weight_enumeration
+    description: "Listing all model files (reconnaissance)"
+    severity: high
+    conditions:
+      - action: "k8s_list"
+      - resource_pattern: "persistentvolumeclaims/models*"
