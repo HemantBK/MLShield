@@ -14,14 +14,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy dependency files
 COPY pyproject.toml ./
 
-# Install Python dependencies (CPU-only PyTorch to keep image small)
+# Install CPU-only PyTorch first (separate step to use PyTorch index)
+RUN pip install --no-cache-dir --prefix=/install \
+    torch>=2.1.0 --index-url https://download.pytorch.org/whl/cpu
+
+# Install remaining dependencies (from default PyPI index)
 RUN pip install --no-cache-dir --prefix=/install \
     fastapi[standard]>=0.104.0 \
     uvicorn>=0.24.0 \
     pydantic>=2.5.0 \
     pyyaml>=6.0 \
     redis>=5.0.0 \
-    torch>=2.1.0 --index-url https://download.pytorch.org/whl/cpu \
     scikit-learn>=1.3.0 \
     numpy>=1.24.0 \
     prometheus-client>=0.19.0 \
