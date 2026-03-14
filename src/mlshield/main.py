@@ -19,7 +19,7 @@ def cli():
 @click.option("--log-level", default="INFO", help="Log level")
 def serve(config, host, port, log_level):
     """Start the MLShield monitoring server."""
-    cfg = load_config(config)
+    load_config(config)
     logger = setup_logging(level=log_level)
     logger.info("Starting MLShield", version="0.1.0", host=host, port=port)
 

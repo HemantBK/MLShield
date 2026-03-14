@@ -1,19 +1,15 @@
 # src/mlshield/metrics/evaluator.py
 """Benchmark evaluation utilities for the full cascade."""
 import json
-import sys
-import time
-import asyncio
 import numpy as np
 from datetime import datetime, timezone
 from collections import defaultdict
-from pathlib import Path
 
 from ..ingestion.event_bus import TrajectoryEvent, EventSource
 from ..specs.spec_validator import SpecValidator
 from ..detectors.layer2_ml import MLDetector
 from ..detectors.layer3_llm import LLMJudge
-from ..detectors.cascade import CascadedDetector, DetectionResult
+from ..detectors.cascade import CascadedDetector
 
 
 def event_from_benchmark(raw: dict, step: int) -> TrajectoryEvent:

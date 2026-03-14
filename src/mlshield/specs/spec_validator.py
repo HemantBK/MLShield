@@ -1,8 +1,6 @@
 # src/mlshield/specs/spec_validator.py
 import yaml
 import re
-from dataclasses import dataclass
-from typing import Optional
 from ..ingestion.event_bus import TrajectoryEvent
 from .spec_types import ViolationResult
 
@@ -99,7 +97,6 @@ class SpecValidator:
         if event.source.value != "dcgm_gpu":
             return ViolationResult(is_violation=False)
 
-        gpu_spec = spec.get("allowed_behaviors", {}).get("gpu_profile", {})
         z_score = event.details.get("z_score", 0)
 
         if z_score > 3.0:

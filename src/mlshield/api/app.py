@@ -1,7 +1,5 @@
 # src/mlshield/api/app.py
 """FastAPI application for MLShield monitoring server."""
-import asyncio
-import json
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path

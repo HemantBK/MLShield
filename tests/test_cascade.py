@@ -2,7 +2,6 @@
 """Integration tests for the full cascaded detector."""
 import sys
 import pytest
-import asyncio
 from datetime import datetime
 
 sys.path.insert(0, "src")

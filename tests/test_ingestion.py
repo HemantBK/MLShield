@@ -1,8 +1,6 @@
 # tests/test_ingestion.py
 """Tests for the ingestion layer."""
 import sys
-import json
-import pytest
 from datetime import datetime
 
 sys.path.insert(0, "src")

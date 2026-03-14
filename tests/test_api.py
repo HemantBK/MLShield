@@ -8,7 +8,6 @@ sys.path.insert(0, "src")
 
 from httpx import AsyncClient, ASGITransport
 from mlshield.api.app import app, state
-from mlshield.ingestion.event_bus import TrajectoryEvent, EventSource
 from mlshield.specs.spec_validator import SpecValidator
 from mlshield.detectors.layer2_ml import MLDetector
 from mlshield.detectors.layer3_llm import LLMJudge

@@ -135,7 +135,6 @@ Respond with ONLY a JSON object:
         if is_threat:
             action = event.action.lower()
             details = event.details or {}
-            resource = event.resource.lower()
 
             if "egress" in action or "network" in action:
                 threat_type = "weight_exfiltration"

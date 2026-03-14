@@ -1,7 +1,7 @@
 # src/mlshield/detectors/layer1_rules.py
 """Layer 1: Static Rules Engine -- microsecond-latency hard policy checks."""
 import re
-from ..ingestion.event_bus import TrajectoryEvent, EventSource
+from ..ingestion.event_bus import TrajectoryEvent
 from ..specs.spec_types import ViolationResult
 from ..specs.spec_validator import SpecValidator
 

@@ -2,7 +2,7 @@
 import httpx
 import asyncio
 from datetime import datetime, timezone
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 from .event_bus import TrajectoryEvent, EventSource
 
 # Key GPU metrics for security monitoring

@@ -1,7 +1,6 @@
 # tests/test_layer2.py
 """Tests for Layer 2 ML detectors and temporal metrics."""
 import sys
-import pytest
 import numpy as np
 import torch
 from datetime import datetime

@@ -31,7 +31,10 @@
       "Bash(PYTHONPATH=src python -c \":*)",
       "Bash(PYTHONPATH=src python -m pytest tests/ -q --tb=short)",
       "Bash(xargs wc:*)",
-      "Bash(PYTHONPATH=src python -c \"from mlshield import CascadedDetector, TrajectoryEvent, EventSource, load_config; print\\(''Top-level imports work''\\)\")"
+      "Bash(PYTHONPATH=src python -c \"from mlshield import CascadedDetector, TrajectoryEvent, EventSource, load_config; print\\(''Top-level imports work''\\)\")",
+      "Bash(PYTHONPATH=src python -m ruff check src/ tests/)",
+      "Bash(python -m black --check src/ tests/)",
+      "Bash(PYTHONPATH=src python -m ruff check src/ tests/ --fix)"
     ]
   }
 }

@@ -2,11 +2,9 @@
 """3-layer cascaded detector adapted from StepShield's HybridGuard."""
 import time
 from dataclasses import dataclass
-from typing import Optional
 
 from ..ingestion.event_bus import TrajectoryEvent
 from ..specs.spec_validator import SpecValidator
-from ..specs.spec_types import ViolationResult
 from .layer1_rules import RuleEngine
 from .layer2_ml import MLDetector
 from .layer3_llm import LLMJudge
