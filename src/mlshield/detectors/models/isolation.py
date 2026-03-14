@@ -1,5 +1,6 @@
 # src/mlshield/detectors/models/isolation.py
 """Isolation Forest wrapper for GPU telemetry anomaly detection."""
+
 import numpy as np
 from sklearn.ensemble import IsolationForest
 from typing import Optional

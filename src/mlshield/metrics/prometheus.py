@@ -1,7 +1,7 @@
 # src/mlshield/metrics/prometheus.py
 """Prometheus metrics exporter for MLShield."""
-from prometheus_client import Counter, Histogram, Gauge
 
+from prometheus_client import Counter, Histogram, Gauge
 
 # Counters
 EVENTS_PROCESSED = Counter(

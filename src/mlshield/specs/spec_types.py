@@ -7,6 +7,7 @@ from ..ingestion.event_bus import TrajectoryEvent
 @dataclass
 class ViolationResult:
     """Result of checking an event against a spec."""
+
     is_violation: bool
     violation_type: str = ""
     severity: str = "info"

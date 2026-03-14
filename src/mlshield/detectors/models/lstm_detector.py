@@ -9,15 +9,18 @@ class TrajectoryLSTM(nn.Module):
 
     def __init__(
         self,
-        input_dim: int = 32,       # Feature dimension per event
+        input_dim: int = 32,  # Feature dimension per event
         hidden_dim: int = 64,
         num_layers: int = 2,
         dropout: float = 0.2,
     ):
         super().__init__()
         self.lstm = nn.LSTM(
-            input_dim, hidden_dim, num_layers,
-            batch_first=True, dropout=dropout,
+            input_dim,
+            hidden_dim,
+            num_layers,
+            batch_first=True,
+            dropout=dropout,
         )
         self.attention = nn.Linear(hidden_dim, 1)
         self.classifier = nn.Sequential(
@@ -35,10 +38,10 @@ class TrajectoryLSTM(nn.Module):
         Returns:
             anomaly_scores: (batch, 1) -- anomaly probability
         """
-        lstm_out, _ = self.lstm(x)              # (batch, seq_len, hidden)
+        lstm_out, _ = self.lstm(x)  # (batch, seq_len, hidden)
         attn_weights = torch.softmax(
             self.attention(lstm_out), dim=1
-        )                                        # (batch, seq_len, 1)
+        )  # (batch, seq_len, 1)
         context = (lstm_out * attn_weights).sum(dim=1)  # (batch, hidden)
         return self.classifier(context)
 
@@ -48,12 +51,20 @@ class EventFeaturizer:
 
     # Map action types to numeric categories
     ACTION_CATEGORIES = {
-        "k8s_get": 0, "k8s_list": 1, "k8s_create": 2,
-        "k8s_update": 3, "k8s_delete": 4, "k8s_exec": 5,
-        "k8s_attach": 6, "k8s_portforward": 7,
-        "gpu_metrics_snapshot": 8, "gpu_anomaly": 9,
-        "network_egress": 10, "checkpoint_create": 11,
-        "weight_access": 12, "unknown": 13,
+        "k8s_get": 0,
+        "k8s_list": 1,
+        "k8s_create": 2,
+        "k8s_update": 3,
+        "k8s_delete": 4,
+        "k8s_exec": 5,
+        "k8s_attach": 6,
+        "k8s_portforward": 7,
+        "gpu_metrics_snapshot": 8,
+        "gpu_anomaly": 9,
+        "network_egress": 10,
+        "checkpoint_create": 11,
+        "weight_access": 12,
+        "unknown": 13,
     }
 
     def featurize(self, event) -> np.ndarray:
@@ -61,17 +72,22 @@ class EventFeaturizer:
         features = np.zeros(32, dtype=np.float32)
 
         # Action category (one-hot, dims 0-13)
-        action = event.action.lower() if hasattr(event, 'action') else str(event.get("action", "")).lower()
+        action = (
+            event.action.lower()
+            if hasattr(event, "action")
+            else str(event.get("action", "")).lower()
+        )
         for key, idx in self.ACTION_CATEGORIES.items():
             if key in action:
                 features[idx] = 1.0
                 break
 
         # Time features (dims 14-16)
-        if hasattr(event, 'timestamp'):
+        if hasattr(event, "timestamp"):
             ts = event.timestamp
         else:
             from datetime import datetime
+
             ts_str = event.get("timestamp", "")
             try:
                 ts = datetime.fromisoformat(str(ts_str))
@@ -83,7 +99,7 @@ class EventFeaturizer:
         features[16] = 1.0 if ts.weekday() >= 5 else 0.0  # Weekend
 
         # Security signals (dims 17-21)
-        if hasattr(event, 'details'):
+        if hasattr(event, "details"):
             details = event.details or {}
         else:
             details = event.get("details", {}) or {}
@@ -93,7 +109,11 @@ class EventFeaturizer:
         features[19] = 1.0 if "exec" in action or "attach" in action else 0.0
         features[20] = 1.0 if details.get("response_code", 200) >= 400 else 0.0
 
-        step = event.trajectory_step if hasattr(event, 'trajectory_step') else event.get("step", 0)
+        step = (
+            event.trajectory_step
+            if hasattr(event, "trajectory_step")
+            else event.get("step", 0)
+        )
         features[21] = min(step / 100.0, 1.0)
 
         # GPU metrics (dims 22-27) -- if available
@@ -105,11 +125,20 @@ class EventFeaturizer:
         features[27] = min(details.get("DCGM_FI_DEV_ENC_UTIL", 0) / 100, 1.0)
 
         # Source encoding (dims 28-31)
-        if hasattr(event, 'source'):
-            source_val = event.source.value if hasattr(event.source, 'value') else str(event.source)
+        if hasattr(event, "source"):
+            source_val = (
+                event.source.value
+                if hasattr(event.source, "value")
+                else str(event.source)
+            )
         else:
             source_val = "k8s_audit"
-        source_map = {"k8s_audit": 28, "dcgm_gpu": 29, "app_event": 30, "falco_alert": 31}
+        source_map = {
+            "k8s_audit": 28,
+            "dcgm_gpu": 29,
+            "app_event": 30,
+            "falco_alert": 31,
+        }
         src_idx = source_map.get(source_val, 30)
         features[src_idx] = 1.0
 

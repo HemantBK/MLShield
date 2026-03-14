@@ -1,5 +1,6 @@
 # tests/test_cascade.py
 """Integration tests for the full cascaded detector."""
+
 import sys
 import pytest
 from datetime import datetime
@@ -34,7 +35,7 @@ def make_event(**kwargs) -> TrajectoryEvent:
 def cascade():
     validator = SpecValidator(spec_path="configs/default_specs.yaml")
     ml_detector = MLDetector()  # No trained model -- will return 0.0
-    llm_judge = LLMJudge()      # No API key -- will use fallback
+    llm_judge = LLMJudge()  # No API key -- will use fallback
     return CascadedDetector(
         spec_validator=validator,
         ml_detector=ml_detector,
@@ -46,6 +47,7 @@ def cascade():
 def cascade_with_models():
     """Cascade with trained models loaded."""
     from pathlib import Path
+
     lstm_path = "benchmark/data/models/lstm_detector.pt"
     iso_path = "benchmark/data/models/isolation_forest.pkl"
 
@@ -307,7 +309,10 @@ class TestCascadeWithModels:
                 job_id="attack-job",
                 action="network_egress",
                 resource="pods/training-job",
-                details={"destination": "evil.s3.amazonaws.com", "bytes_sent": 5_000_000_000},
+                details={
+                    "destination": "evil.s3.amazonaws.com",
+                    "bytes_sent": 5_000_000_000,
+                },
                 trajectory_step=i,
             )
             result = await cascade.evaluate(event)

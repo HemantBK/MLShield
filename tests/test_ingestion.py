@@ -1,5 +1,6 @@
 # tests/test_ingestion.py
 """Tests for the ingestion layer."""
+
 import sys
 from datetime import datetime
 
@@ -104,7 +105,9 @@ class TestK8sAuditIngester:
 
     def test_parse_valid_json(self):
         ingester = K8sAuditIngester()
-        result = ingester._parse_audit_event('{"verb": "get", "objectRef": {"resource": "pods"}}')
+        result = ingester._parse_audit_event(
+            '{"verb": "get", "objectRef": {"resource": "pods"}}'
+        )
         assert result is not None
         assert result["verb"] == "get"
 
@@ -116,22 +119,37 @@ class TestK8sAuditIngester:
     def test_ml_relevant_filter(self):
         ingester = K8sAuditIngester()
         # Relevant event
-        assert ingester._is_ml_relevant({
-            "objectRef": {"resource": "pods"},
-            "verb": "get",
-        }) is True
+        assert (
+            ingester._is_ml_relevant(
+                {
+                    "objectRef": {"resource": "pods"},
+                    "verb": "get",
+                }
+            )
+            is True
+        )
 
         # Irrelevant resource
-        assert ingester._is_ml_relevant({
-            "objectRef": {"resource": "events"},
-            "verb": "get",
-        }) is False
+        assert (
+            ingester._is_ml_relevant(
+                {
+                    "objectRef": {"resource": "events"},
+                    "verb": "get",
+                }
+            )
+            is False
+        )
 
         # Irrelevant verb
-        assert ingester._is_ml_relevant({
-            "objectRef": {"resource": "pods"},
-            "verb": "proxy",
-        }) is False
+        assert (
+            ingester._is_ml_relevant(
+                {
+                    "objectRef": {"resource": "pods"},
+                    "verb": "proxy",
+                }
+            )
+            is False
+        )
 
     def test_weight_access_detection(self):
         ingester = K8sAuditIngester()
@@ -179,15 +197,17 @@ class TestAppEventIngester:
 
     def test_ingest_direct(self):
         ingester = AppEventIngester()
-        event = ingester.ingest_direct({
-            "event_id": "app-1",
-            "timestamp": "2024-01-01T10:00:00",
-            "job_id": "training-job-1",
-            "user": "ml-pipeline",
-            "action": "checkpoint_create",
-            "resource": "checkpoint-10.safetensors",
-            "details": {"size_gb": 15.5},
-        })
+        event = ingester.ingest_direct(
+            {
+                "event_id": "app-1",
+                "timestamp": "2024-01-01T10:00:00",
+                "job_id": "training-job-1",
+                "user": "ml-pipeline",
+                "action": "checkpoint_create",
+                "resource": "checkpoint-10.safetensors",
+                "details": {"size_gb": 15.5},
+            }
+        )
         assert event is not None
         assert event.event_id == "app-1"
         assert event.source == EventSource.APP_EVENT
@@ -200,9 +220,11 @@ class TestAppEventIngester:
 
     def test_ingest_minimal(self):
         ingester = AppEventIngester()
-        event = ingester.ingest_direct({
-            "action": "health_check",
-        })
+        event = ingester.ingest_direct(
+            {
+                "action": "health_check",
+            }
+        )
         assert event is not None
         assert event.action == "health_check"
         assert event.job_id == "unknown"

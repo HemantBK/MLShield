@@ -1,5 +1,6 @@
 # tests/test_layer2.py
 """Tests for Layer 2 ML detectors and temporal metrics."""
+
 import sys
 import numpy as np
 import torch
@@ -105,10 +106,7 @@ class TestEventFeaturizer:
 
     def test_trajectory_featurization(self):
         feat = EventFeaturizer()
-        events = [
-            make_event(action="k8s_get", trajectory_step=i)
-            for i in range(10)
-        ]
+        events = [make_event(action="k8s_get", trajectory_step=i) for i in range(10)]
         result = feat.featurize_trajectory(events, max_len=50)
         assert result.shape == (50, 32)
         # Padding should be zeros
@@ -166,10 +164,13 @@ class TestTrajectoryLSTM:
     def test_load_trained_model(self):
         """Test loading the trained model if it exists."""
         from pathlib import Path
+
         model_path = "benchmark/data/models/lstm_detector.pt"
         if Path(model_path).exists():
             model = TrajectoryLSTM()
-            model.load_state_dict(torch.load(model_path, map_location="cpu", weights_only=True))
+            model.load_state_dict(
+                torch.load(model_path, map_location="cpu", weights_only=True)
+            )
             model.eval()
             x = torch.randn(1, 50, 32)
             output = model(x)
@@ -246,8 +247,7 @@ class TestGPUIsolationForest:
     def test_save_and_load(self, tmp_path):
         iso = GPUIsolationForest()
         normal_events = [
-            {"DCGM_FI_DEV_GPU_UTIL": np.random.normal(85, 5)}
-            for _ in range(50)
+            {"DCGM_FI_DEV_GPU_UTIL": np.random.normal(85, 5)} for _ in range(50)
         ]
         iso.fit(normal_events)
 
@@ -279,7 +279,9 @@ class TestTemporalMetrics:
         event = make_event(job_id="job-1")
 
         metrics.record_ground_truth_violation("job-1", step=10)
-        result = self.MockDetectionResult(event=event, detected_by_layer=1, step_detected=10)
+        result = self.MockDetectionResult(
+            event=event, detected_by_layer=1, step_detected=10
+        )
         metrics.record_detection(result)
 
         eir = metrics.early_intervention_rate(max_acceptable_gap=5)
@@ -290,7 +292,9 @@ class TestTemporalMetrics:
         event = make_event(job_id="job-1")
 
         metrics.record_ground_truth_violation("job-1", step=10)
-        result = self.MockDetectionResult(event=event, detected_by_layer=2, step_detected=20)
+        result = self.MockDetectionResult(
+            event=event, detected_by_layer=2, step_detected=20
+        )
         metrics.record_detection(result)
 
         eir = metrics.early_intervention_rate(max_acceptable_gap=5)
@@ -317,7 +321,9 @@ class TestTemporalMetrics:
         event = make_event(job_id="job-1")
 
         metrics.record_ground_truth_violation("job-1", step=10)
-        result = self.MockDetectionResult(event=event, detected_by_layer=1, step_detected=10)
+        result = self.MockDetectionResult(
+            event=event, detected_by_layer=1, step_detected=10
+        )
         metrics.record_detection(result)
 
         prevented = metrics.damage_prevented()
@@ -328,7 +334,9 @@ class TestTemporalMetrics:
         event = make_event(job_id="job-1")
 
         metrics.record_ground_truth_violation("job-1", step=10)
-        result = self.MockDetectionResult(event=event, detected_by_layer=2, step_detected=50)
+        result = self.MockDetectionResult(
+            event=event, detected_by_layer=2, step_detected=50
+        )
         metrics.record_detection(result)
 
         prevented = metrics.damage_prevented()
@@ -340,7 +348,9 @@ class TestTemporalMetrics:
         event = make_event(job_id="job-1")
 
         metrics.record_ground_truth_violation("job-1", step=10)
-        result = self.MockDetectionResult(event=event, detected_by_layer=1, step_detected=12)
+        result = self.MockDetectionResult(
+            event=event, detected_by_layer=1, step_detected=12
+        )
         metrics.record_detection(result)
 
         summary = metrics.summary()
@@ -354,7 +364,9 @@ class TestTemporalMetrics:
         metrics = TemporalMetrics()
         for layer in [1, 1, 1, 2, 3]:
             event = make_event(job_id=f"job-{layer}")
-            result = self.MockDetectionResult(event=event, detected_by_layer=layer, step_detected=10)
+            result = self.MockDetectionResult(
+                event=event, detected_by_layer=layer, step_detected=10
+            )
             metrics.record_detection(result)
 
         summary = metrics.summary()

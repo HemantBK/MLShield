@@ -35,8 +35,9 @@ class SpecValidator:
         violations = [c for c in checks if c.is_violation]
         if violations:
             violations.sort(
-                key=lambda v: {"critical": 0, "high": 1, "medium": 2, "low": 3}
-                .get(v.severity, 4)
+                key=lambda v: {"critical": 0, "high": 1, "medium": 2, "low": 3}.get(
+                    v.severity, 4
+                )
             )
             return violations[0]
 
@@ -66,7 +67,9 @@ class SpecValidator:
 
         return ViolationResult(is_violation=False)
 
-    def _check_network_egress(self, event: TrajectoryEvent, spec: dict) -> ViolationResult:
+    def _check_network_egress(
+        self, event: TrajectoryEvent, spec: dict
+    ) -> ViolationResult:
         """Check for suspicious outbound network activity."""
         if "network" not in event.action:
             return ViolationResult(is_violation=False)
@@ -115,7 +118,9 @@ class SpecValidator:
 
         return ViolationResult(is_violation=False)
 
-    def _check_checkpoint_behavior(self, event: TrajectoryEvent, spec: dict) -> ViolationResult:
+    def _check_checkpoint_behavior(
+        self, event: TrajectoryEvent, spec: dict
+    ) -> ViolationResult:
         """Check checkpoint creation patterns."""
         if "checkpoint" not in event.action.lower():
             return ViolationResult(is_violation=False)

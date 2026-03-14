@@ -1,5 +1,6 @@
 # src/mlshield/metrics/temporal.py
 """Temporal security metrics adapted from StepShield."""
+
 from dataclasses import dataclass, field
 from collections import defaultdict
 
@@ -10,6 +11,7 @@ class TemporalMetrics:
     Temporal security metrics adapted from StepShield.
     Measures WHEN threats are detected, not just WHETHER.
     """
+
     detections: list = field(default_factory=list)
     _job_first_violation: dict = field(default_factory=dict)
     _job_first_detection: dict = field(default_factory=dict)
@@ -54,6 +56,7 @@ class TemporalMetrics:
     def detection_gap(self) -> dict:
         """Average and median steps between violation and detection."""
         import numpy as np
+
         gaps = []
         for job_id, violation_step in self._job_first_violation.items():
             if job_id in self._job_first_detection:

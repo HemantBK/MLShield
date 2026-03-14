@@ -7,16 +7,16 @@ from .event_bus import TrajectoryEvent, EventSource
 
 # Key GPU metrics for security monitoring
 SECURITY_RELEVANT_METRICS = [
-    "DCGM_FI_DEV_GPU_UTIL",          # GPU utilization %
-    "DCGM_FI_DEV_MEM_COPY_UTIL",     # Memory utilization %
-    "DCGM_FI_DEV_FB_USED",           # Framebuffer memory used (MiB)
-    "DCGM_FI_DEV_FB_FREE",           # Framebuffer memory free (MiB)
+    "DCGM_FI_DEV_GPU_UTIL",  # GPU utilization %
+    "DCGM_FI_DEV_MEM_COPY_UTIL",  # Memory utilization %
+    "DCGM_FI_DEV_FB_USED",  # Framebuffer memory used (MiB)
+    "DCGM_FI_DEV_FB_FREE",  # Framebuffer memory free (MiB)
     "DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL",  # NVLink bandwidth
-    "DCGM_FI_DEV_PCIE_REPLAY_COUNTER",     # PCIe errors
-    "DCGM_FI_DEV_GPU_TEMP",          # Temperature
-    "DCGM_FI_DEV_POWER_USAGE",       # Power draw
-    "DCGM_FI_DEV_SM_CLOCK",          # SM clock frequency
-    "DCGM_FI_DEV_ENC_UTIL",          # Encoder utilization (data movement!)
+    "DCGM_FI_DEV_PCIE_REPLAY_COUNTER",  # PCIe errors
+    "DCGM_FI_DEV_GPU_TEMP",  # Temperature
+    "DCGM_FI_DEV_POWER_USAGE",  # Power draw
+    "DCGM_FI_DEV_SM_CLOCK",  # SM clock frequency
+    "DCGM_FI_DEV_ENC_UTIL",  # Encoder utilization (data movement!)
 ]
 
 
@@ -30,8 +30,8 @@ class DCGMIngester:
     ):
         self.dcgm_url = dcgm_url
         self.poll_interval = poll_interval
-        self._baselines: dict[str, dict] = {}    # gpu_id -> baseline metrics
-        self._history: dict[str, list] = {}       # gpu_id -> metric history
+        self._baselines: dict[str, dict] = {}  # gpu_id -> baseline metrics
+        self._history: dict[str, list] = {}  # gpu_id -> metric history
 
     async def stream_events(self) -> AsyncGenerator[TrajectoryEvent, None]:
         """Poll DCGM metrics and emit events on anomalies."""
@@ -55,9 +55,7 @@ class DCGMIngester:
 
                         # Check for anomalies against baseline
                         if gpu_id in self._baselines:
-                            anomalies = self._check_anomalies(
-                                gpu_id, gpu_metrics
-                            )
+                            anomalies = self._check_anomalies(gpu_id, gpu_metrics)
                             for anomaly in anomalies:
                                 yield anomaly
 
@@ -92,7 +90,7 @@ class DCGMIngester:
                     labels_str = labels_str.rstrip("}")
                     labels = dict(
                         item.split("=")
-                        for item in labels_str.replace("\"", "").split(",")
+                        for item in labels_str.replace('"', "").split(",")
                         if "=" in item
                     )
                 else:
@@ -110,6 +108,7 @@ class DCGMIngester:
     def _compute_baseline(self, history: list[dict]) -> dict:
         """Compute mean and std for each metric from history."""
         import numpy as np
+
         baseline = {}
         for key in SECURITY_RELEVANT_METRICS:
             values = [h.get(key, 0) for h in history if key in h]
@@ -136,21 +135,23 @@ class DCGMIngester:
             if stats["std"] > 0:
                 z_score = abs(value - stats["mean"]) / stats["std"]
                 if z_score > 3.0:
-                    events.append(TrajectoryEvent(
-                        event_id=f"anomaly-{gpu_id}-{metric_name}-{datetime.now(timezone.utc).timestamp()}",
-                        timestamp=datetime.now(timezone.utc),
-                        source=EventSource.DCGM_GPU,
-                        job_id=current.get("pod_name", f"gpu-{gpu_id}"),
-                        user=None,
-                        action=f"gpu_anomaly_{metric_name.lower()}",
-                        resource=f"gpu/{gpu_id}",
-                        details={
-                            "metric": metric_name,
-                            "value": value,
-                            "baseline_mean": stats["mean"],
-                            "baseline_std": stats["std"],
-                            "z_score": z_score,
-                            "severity": "high" if z_score > 5 else "medium",
-                        },
-                    ))
+                    events.append(
+                        TrajectoryEvent(
+                            event_id=f"anomaly-{gpu_id}-{metric_name}-{datetime.now(timezone.utc).timestamp()}",
+                            timestamp=datetime.now(timezone.utc),
+                            source=EventSource.DCGM_GPU,
+                            job_id=current.get("pod_name", f"gpu-{gpu_id}"),
+                            user=None,
+                            action=f"gpu_anomaly_{metric_name.lower()}",
+                            resource=f"gpu/{gpu_id}",
+                            details={
+                                "metric": metric_name,
+                                "value": value,
+                                "baseline_mean": stats["mean"],
+                                "baseline_std": stats["std"],
+                                "z_score": z_score,
+                                "severity": "high" if z_score > 5 else "medium",
+                            },
+                        )
+                    )
         return events

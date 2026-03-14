@@ -1,5 +1,6 @@
 # src/mlshield/detectors/layer2_ml.py
 """Layer 2: ML Anomaly Detector -- LSTM + Isolation Forest."""
+
 import torch
 import numpy as np
 from typing import Optional
@@ -38,7 +39,9 @@ class MLDetector:
         self.lstm.eval()
         self._lstm_loaded = False
         if lstm_model_path and Path(lstm_model_path).exists():
-            self.lstm.load_state_dict(torch.load(lstm_model_path, map_location="cpu", weights_only=True))
+            self.lstm.load_state_dict(
+                torch.load(lstm_model_path, map_location="cpu", weights_only=True)
+            )
             self._lstm_loaded = True
 
         # Isolation Forest
@@ -94,7 +97,9 @@ class MLDetector:
 
         # Keep buffer at sequence_length
         if len(self._event_buffers[job_id]) > self.sequence_length:
-            self._event_buffers[job_id] = self._event_buffers[job_id][-self.sequence_length:]
+            self._event_buffers[job_id] = self._event_buffers[job_id][
+                -self.sequence_length :
+            ]
 
         # Need at least a few events for meaningful scoring
         if len(self._event_buffers[job_id]) < 5:
@@ -103,7 +108,9 @@ class MLDetector:
         # Prepare input tensor
         buffer = self._event_buffers[job_id]
         # Pad to sequence_length
-        padded = buffer + [np.zeros(32, dtype=np.float32)] * (self.sequence_length - len(buffer))
+        padded = buffer + [np.zeros(32, dtype=np.float32)] * (
+            self.sequence_length - len(buffer)
+        )
         x = torch.tensor(np.array([padded]), dtype=torch.float32)
 
         with torch.no_grad():
@@ -127,7 +134,9 @@ class MLDetector:
 
     def load_lstm(self, path: str):
         """Load a trained LSTM model."""
-        self.lstm.load_state_dict(torch.load(path, map_location="cpu", weights_only=True))
+        self.lstm.load_state_dict(
+            torch.load(path, map_location="cpu", weights_only=True)
+        )
         self.lstm.eval()
         self._lstm_loaded = True
 

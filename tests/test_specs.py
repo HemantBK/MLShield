@@ -1,5 +1,6 @@
 # tests/test_specs.py
 """Tests for the behavioral specification engine."""
+
 import sys
 import pytest
 from datetime import datetime

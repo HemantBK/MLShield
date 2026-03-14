@@ -1,5 +1,6 @@
 # src/mlshield/detectors/layer1_rules.py
 """Layer 1: Static Rules Engine -- microsecond-latency hard policy checks."""
+
 import re
 from ..ingestion.event_bus import TrajectoryEvent
 from ..specs.spec_types import ViolationResult
@@ -45,7 +46,9 @@ class RuleEngine:
             r".*pastebin\.com",
         ]
 
-    def check(self, event: TrajectoryEvent, spec_name: str = "standard_training") -> ViolationResult:
+    def check(
+        self, event: TrajectoryEvent, spec_name: str = "standard_training"
+    ) -> ViolationResult:
         """
         Run all Layer 1 checks on an event.
 
@@ -62,14 +65,17 @@ class RuleEngine:
         violations = [c for c in checks if c.is_violation]
         if violations:
             violations.sort(
-                key=lambda v: {"critical": 0, "high": 1, "medium": 2, "low": 3}
-                .get(v.severity, 4)
+                key=lambda v: {"critical": 0, "high": 1, "medium": 2, "low": 3}.get(
+                    v.severity, 4
+                )
             )
             return violations[0]
 
         return ViolationResult(is_violation=False)
 
-    def _check_spec_violation(self, event: TrajectoryEvent, spec_name: str) -> ViolationResult:
+    def _check_spec_violation(
+        self, event: TrajectoryEvent, spec_name: str
+    ) -> ViolationResult:
         """Delegate to the spec validator."""
         return self.spec_validator.validate_event(event, spec_name)
 
@@ -92,7 +98,11 @@ class RuleEngine:
                 )
 
         # Also catch any secrets access from non-system users
-        if "secrets/" in resource and event.user and "system:" not in (event.user or ""):
+        if (
+            "secrets/" in resource
+            and event.user
+            and "system:" not in (event.user or "")
+        ):
             return ViolationResult(
                 is_violation=True,
                 violation_type="secret_access",
@@ -174,7 +184,9 @@ class RuleEngine:
 
         return ViolationResult(is_violation=False)
 
-    def _check_unauthorized_resource_access(self, event: TrajectoryEvent) -> ViolationResult:
+    def _check_unauthorized_resource_access(
+        self, event: TrajectoryEvent
+    ) -> ViolationResult:
         """Check for access to production models or restricted resources."""
         resource = event.resource.lower()
         details = event.details or {}

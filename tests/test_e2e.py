@@ -1,5 +1,6 @@
 # tests/test_e2e.py
 """End-to-end integration tests: API -> Cascade -> Detection."""
+
 import sys
 import pytest
 from datetime import datetime, timezone
@@ -55,14 +56,26 @@ class TestE2EAttackScenario:
 
         # Phase 1: Normal training (should all pass)
         normal_events = [
-            {"action": "k8s_get", "resource": "pods/data-loader",
-             "job_id": "e2e-job", "trajectory_step": 0,
-             "details": {"path": "/data/batch_0.parquet"}},
-            {"action": "k8s_get", "resource": "pods/health",
-             "job_id": "e2e-job", "trajectory_step": 1},
-            {"action": "k8s_get", "resource": "pods/data-loader",
-             "job_id": "e2e-job", "trajectory_step": 2,
-             "details": {"path": "/data/batch_1.parquet"}},
+            {
+                "action": "k8s_get",
+                "resource": "pods/data-loader",
+                "job_id": "e2e-job",
+                "trajectory_step": 0,
+                "details": {"path": "/data/batch_0.parquet"},
+            },
+            {
+                "action": "k8s_get",
+                "resource": "pods/health",
+                "job_id": "e2e-job",
+                "trajectory_step": 1,
+            },
+            {
+                "action": "k8s_get",
+                "resource": "pods/data-loader",
+                "job_id": "e2e-job",
+                "trajectory_step": 2,
+                "details": {"path": "/data/batch_1.parquet"},
+            },
         ]
         for event in normal_events:
             resp = await client.post("/api/v1/events", json=event)
@@ -70,12 +83,15 @@ class TestE2EAttackScenario:
             assert resp.json()["is_threat"] is False
 
         # Phase 2: Credential theft (should be caught)
-        cred_resp = await client.post("/api/v1/events", json={
-            "action": "k8s_get",
-            "resource": "secrets/aws-credentials",
-            "job_id": "e2e-job",
-            "trajectory_step": 3,
-        })
+        cred_resp = await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "e2e-job",
+                "trajectory_step": 3,
+            },
+        )
         assert cred_resp.status_code == 200
         data = cred_resp.json()
         assert data["is_threat"] is True
@@ -83,13 +99,19 @@ class TestE2EAttackScenario:
         assert data["detected_by_layer"] == 1
 
         # Phase 3: Exfiltration (should be caught)
-        exfil_resp = await client.post("/api/v1/events", json={
-            "action": "network_egress",
-            "resource": "pods/training-job",
-            "job_id": "e2e-job",
-            "trajectory_step": 4,
-            "details": {"destination": "evil.s3.amazonaws.com", "bytes_sent": 5_000_000_000},
-        })
+        exfil_resp = await client.post(
+            "/api/v1/events",
+            json={
+                "action": "network_egress",
+                "resource": "pods/training-job",
+                "job_id": "e2e-job",
+                "trajectory_step": 4,
+                "details": {
+                    "destination": "evil.s3.amazonaws.com",
+                    "bytes_sent": 5_000_000_000,
+                },
+            },
+        )
         assert exfil_resp.status_code == 200
         data = exfil_resp.json()
         assert data["is_threat"] is True
@@ -109,10 +131,18 @@ class TestE2EAttackScenario:
         """Submit a batch with mix of benign and malicious events."""
         events = [
             {"action": "k8s_get", "resource": "pods/health", "job_id": "batch-1"},
-            {"action": "k8s_get", "resource": "secrets/aws-credentials", "job_id": "batch-2"},
+            {
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "batch-2",
+            },
             {"action": "k8s_get", "resource": "pods/data-loader", "job_id": "batch-3"},
-            {"action": "network_egress", "resource": "pods/job", "job_id": "batch-4",
-             "details": {"destination": "evil.s3.amazonaws.com"}},
+            {
+                "action": "network_egress",
+                "resource": "pods/job",
+                "job_id": "batch-4",
+                "details": {"destination": "evil.s3.amazonaws.com"},
+            },
             {"action": "k8s_get", "resource": "pods/health", "job_id": "batch-5"},
         ]
         resp = await client.post("/api/v1/events/batch", json={"events": events})
@@ -130,25 +160,34 @@ class TestE2EAttackScenario:
         """After processing a mix of events, cascade efficiency should show Layer 1 dominance."""
         # Send 20 benign events
         for i in range(20):
-            await client.post("/api/v1/events", json={
-                "action": "k8s_get",
-                "resource": "pods/health",
-                "job_id": f"load-test-{i}",
-                "trajectory_step": i,
-            })
+            await client.post(
+                "/api/v1/events",
+                json={
+                    "action": "k8s_get",
+                    "resource": "pods/health",
+                    "job_id": f"load-test-{i}",
+                    "trajectory_step": i,
+                },
+            )
 
         # Send 2 malicious events
-        await client.post("/api/v1/events", json={
-            "action": "k8s_get",
-            "resource": "secrets/aws-credentials",
-            "job_id": "attacker",
-        })
-        await client.post("/api/v1/events", json={
-            "action": "network_egress",
-            "resource": "pods/job",
-            "job_id": "attacker",
-            "details": {"destination": "evil.s3.amazonaws.com"},
-        })
+        await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "attacker",
+            },
+        )
+        await client.post(
+            "/api/v1/events",
+            json={
+                "action": "network_egress",
+                "resource": "pods/job",
+                "job_id": "attacker",
+                "details": {"destination": "evil.s3.amazonaws.com"},
+            },
+        )
 
         stats_resp = await client.get("/api/v1/stats")
         stats = stats_resp.json()
@@ -159,12 +198,22 @@ class TestE2EAttackScenario:
     async def test_health_reflects_activity(self, client):
         """Health endpoint should reflect processing activity."""
         # Submit events
-        await client.post("/api/v1/events", json={
-            "action": "k8s_get", "resource": "pods/health", "job_id": "test",
-        })
-        await client.post("/api/v1/events", json={
-            "action": "k8s_get", "resource": "secrets/aws-credentials", "job_id": "test",
-        })
+        await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_get",
+                "resource": "pods/health",
+                "job_id": "test",
+            },
+        )
+        await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "test",
+            },
+        )
 
         health_resp = await client.get("/health")
         health = health_resp.json()
@@ -175,11 +224,14 @@ class TestE2EAttackScenario:
     async def test_temporal_metrics_after_events(self, client):
         """Temporal metrics should update after threat detection."""
         # Submit a threat
-        await client.post("/api/v1/events", json={
-            "action": "k8s_get",
-            "resource": "secrets/aws-credentials",
-            "job_id": "temporal-test",
-        })
+        await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "temporal-test",
+            },
+        )
 
         temporal_resp = await client.get("/api/v1/stats/temporal")
         temporal = temporal_resp.json()
@@ -194,14 +246,24 @@ class TestE2EAttackScenario:
         assert resp.json()["status"] == "healthy"
 
         # 2. Submit events
-        resp = await client.post("/api/v1/events", json={
-            "action": "k8s_get", "resource": "pods/health", "job_id": "workflow",
-        })
+        resp = await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_get",
+                "resource": "pods/health",
+                "job_id": "workflow",
+            },
+        )
         assert resp.json()["is_threat"] is False
 
-        resp = await client.post("/api/v1/events", json={
-            "action": "k8s_get", "resource": "secrets/aws-credentials", "job_id": "workflow",
-        })
+        resp = await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "workflow",
+            },
+        )
         assert resp.json()["is_threat"] is True
 
         # 3. Check stats

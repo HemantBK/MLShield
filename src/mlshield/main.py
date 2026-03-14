@@ -1,5 +1,6 @@
 # src/mlshield/main.py
 """MLShield entry point."""
+
 import click
 import uvicorn
 from .utils.config import load_config
@@ -34,11 +35,14 @@ def serve(config, host, port, log_level):
 
 @cli.command()
 @click.option("--output-dir", default="benchmark/data", help="Output directory")
-@click.option("--n-normal", default=1500, type=int, help="Number of normal trajectories")
+@click.option(
+    "--n-normal", default=1500, type=int, help="Number of normal trajectories"
+)
 @click.option("--n-exfil", default=200, type=int, help="Number of exfil trajectories")
 def generate(output_dir, n_normal, n_exfil):
     """Generate synthetic benchmark dataset."""
     from benchmark.generate_dataset import generate_full_dataset
+
     generate_full_dataset(n_normal=n_normal, n_exfil=n_exfil, output_dir=output_dir)
 
 

@@ -1,12 +1,21 @@
 # src/mlshield/api/app.py
 """FastAPI application for MLShield monitoring server."""
+
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 import hmac
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query, Request, Depends
+from fastapi import (
+    FastAPI,
+    WebSocket,
+    WebSocketDisconnect,
+    HTTPException,
+    Query,
+    Request,
+    Depends,
+)
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
@@ -29,11 +38,12 @@ from ..metrics.prometheus import (
     CASCADE_EFFICIENCY,
 )
 
-
 # ---- Pydantic request/response models ----
+
 
 class EventRequest(BaseModel):
     """Incoming event for analysis."""
+
     event_id: Optional[str] = None
     timestamp: Optional[str] = None
     source: str = "k8s_audit"
@@ -47,6 +57,7 @@ class EventRequest(BaseModel):
 
 class DetectionResponse(BaseModel):
     """Detection result returned by the API."""
+
     event_id: str
     is_threat: bool
     confidence: float
@@ -60,11 +71,13 @@ class DetectionResponse(BaseModel):
 
 class BatchEventRequest(BaseModel):
     """Multiple events for batch analysis."""
+
     events: list[EventRequest]
 
 
 class BatchDetectionResponse(BaseModel):
     """Batch detection results."""
+
     results: list[DetectionResponse]
     total_events: int
     threats_found: int
@@ -72,6 +85,7 @@ class BatchDetectionResponse(BaseModel):
 
 class CascadeStatsResponse(BaseModel):
     """Cascade efficiency statistics."""
+
     total_events: int
     layer1_cleared_pct: float
     layer2_processed_pct: float
@@ -80,6 +94,7 @@ class CascadeStatsResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response."""
+
     status: str
     version: str
     uptime_seconds: float
@@ -89,8 +104,10 @@ class HealthResponse(BaseModel):
 
 # ---- Global state ----
 
+
 class AppState:
     """Holds the cascade detector and connection manager."""
+
     cascade: Optional[CascadedDetector] = None
     config: Optional[MLShieldConfig] = None
     start_time: Optional[datetime] = None
@@ -103,6 +120,7 @@ state = AppState()
 
 
 # ---- WebSocket connection manager ----
+
 
 class ConnectionManager:
     """Manage WebSocket connections for real-time alert streaming."""
@@ -149,6 +167,7 @@ async def verify_api_key(api_key: str = Depends(api_key_header)) -> str:
 
 # ---- App lifecycle ----
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize the cascade detector on startup."""
@@ -161,8 +180,12 @@ async def lifespan(app: FastAPI):
     validator = SpecValidator(spec_path=config.spec_path)
 
     # Try to load trained models
-    lstm_path = os.environ.get("MLSHIELD_LSTM_MODEL", "benchmark/data/models/lstm_detector.pt")
-    iso_path = os.environ.get("MLSHIELD_ISO_MODEL", "benchmark/data/models/isolation_forest.pkl")
+    lstm_path = os.environ.get(
+        "MLSHIELD_LSTM_MODEL", "benchmark/data/models/lstm_detector.pt"
+    )
+    iso_path = os.environ.get(
+        "MLSHIELD_ISO_MODEL", "benchmark/data/models/isolation_forest.pkl"
+    )
 
     ml_detector = MLDetector(
         lstm_model_path=lstm_path if Path(lstm_path).exists() else None,
@@ -218,6 +241,7 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONRe
 
 # ---- Helper functions ----
 
+
 def event_request_to_trajectory(req: EventRequest) -> TrajectoryEvent:
     """Convert an API event request to a TrajectoryEvent."""
     source_map = {
@@ -228,7 +252,11 @@ def event_request_to_trajectory(req: EventRequest) -> TrajectoryEvent:
     }
     return TrajectoryEvent(
         event_id=req.event_id or f"api-{datetime.now(timezone.utc).timestamp()}",
-        timestamp=datetime.fromisoformat(req.timestamp) if req.timestamp else datetime.now(timezone.utc),
+        timestamp=(
+            datetime.fromisoformat(req.timestamp)
+            if req.timestamp
+            else datetime.now(timezone.utc)
+        ),
         source=source_map.get(req.source, EventSource.K8S_AUDIT),
         job_id=req.job_id,
         user=req.user,
@@ -275,6 +303,7 @@ def detection_to_dict(result: DetectionResult) -> dict:
 
 # ---- API Endpoints ----
 
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
@@ -295,7 +324,9 @@ async def health_check():
 
 @app.post("/api/v1/events", response_model=DetectionResponse)
 @limiter.limit("120/minute")
-async def submit_event(request: Request, req: EventRequest, _key: str = Depends(verify_api_key)):
+async def submit_event(
+    request: Request, req: EventRequest, _key: str = Depends(verify_api_key)
+):
     """Submit a single event for analysis."""
     if state.cascade is None:
         raise HTTPException(status_code=503, detail="Cascade not initialized")
@@ -314,7 +345,7 @@ async def submit_event(request: Request, req: EventRequest, _key: str = Depends(
         alert_dict = detection_to_dict(result)
         state.alert_history.append(alert_dict)
         if len(state.alert_history) > state.max_alert_history:
-            state.alert_history = state.alert_history[-state.max_alert_history:]
+            state.alert_history = state.alert_history[-state.max_alert_history :]
 
         # Broadcast to WebSocket clients
         await ws_manager.broadcast(alert_dict)
@@ -324,7 +355,9 @@ async def submit_event(request: Request, req: EventRequest, _key: str = Depends(
 
 @app.post("/api/v1/events/batch", response_model=BatchDetectionResponse)
 @limiter.limit("30/minute")
-async def submit_batch(request: Request, req: BatchEventRequest, _key: str = Depends(verify_api_key)):
+async def submit_batch(
+    request: Request, req: BatchEventRequest, _key: str = Depends(verify_api_key)
+):
     """Submit a batch of events for analysis."""
     if state.cascade is None:
         raise HTTPException(status_code=503, detail="Cascade not initialized")
@@ -341,7 +374,9 @@ async def submit_batch(request: Request, req: BatchEventRequest, _key: str = Dep
 
         if result.is_threat:
             threats_found += 1
-            THREATS_DETECTED.labels(type=result.threat_type, severity=result.severity).inc()
+            THREATS_DETECTED.labels(
+                type=result.threat_type, severity=result.severity
+            ).inc()
             alert_dict = detection_to_dict(result)
             state.alert_history.append(alert_dict)
             await ws_manager.broadcast(alert_dict)
@@ -350,7 +385,7 @@ async def submit_batch(request: Request, req: BatchEventRequest, _key: str = Dep
 
     # Trim history
     if len(state.alert_history) > state.max_alert_history:
-        state.alert_history = state.alert_history[-state.max_alert_history:]
+        state.alert_history = state.alert_history[-state.max_alert_history :]
 
     return BatchDetectionResponse(
         results=results,
@@ -415,6 +450,7 @@ async def get_alerts_summary(_key: str = Depends(verify_api_key)):
 
 # ---- WebSocket endpoint ----
 
+
 @app.websocket("/ws/alerts")
 async def websocket_alerts(websocket: WebSocket):
     """Real-time alert streaming via WebSocket."""
@@ -432,6 +468,7 @@ async def websocket_alerts(websocket: WebSocket):
 
 # ---- Dashboard ----
 
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard():
     """Serve the monitoring dashboard."""
@@ -442,6 +479,7 @@ async def dashboard():
 
 
 # ---- Prometheus metrics endpoint ----
+
 
 @app.get("/metrics")
 async def prometheus_metrics():

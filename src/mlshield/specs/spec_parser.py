@@ -28,7 +28,9 @@ class SpecParser:
         """List all available spec names."""
         return list(self.specs.keys())
 
-    def match_spec(self, job_type: str, labels: dict = None, namespace: str = "") -> Optional[dict]:
+    def match_spec(
+        self, job_type: str, labels: dict = None, namespace: str = ""
+    ) -> Optional[dict]:
         """Find the best matching spec for a job."""
         for spec in self.specs.values():
             match = spec.get("match", {})
@@ -41,6 +43,7 @@ class SpecParser:
             ns_pattern = match.get("namespace_pattern", "")
             if ns_pattern and namespace:
                 import re
+
                 regex = ns_pattern.replace("*", ".*")
                 if not re.match(regex, namespace):
                     continue

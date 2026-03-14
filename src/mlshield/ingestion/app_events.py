@@ -1,5 +1,6 @@
 # src/mlshield/ingestion/app_events.py
 """Application-level event ingester for MLShield."""
+
 import json
 import asyncio
 from datetime import datetime, timezone
@@ -10,7 +11,9 @@ from .event_bus import TrajectoryEvent, EventSource
 class AppEventIngester:
     """Ingests application-level events (checkpoint saves, data access, etc.)."""
 
-    def __init__(self, redis_url: Optional[str] = None, channel: str = "mlshield:app_events"):
+    def __init__(
+        self, redis_url: Optional[str] = None, channel: str = "mlshield:app_events"
+    ):
         self.redis_url = redis_url
         self.channel = channel
         self._redis = None
@@ -29,6 +32,7 @@ class AppEventIngester:
         """Stream events from Redis Streams."""
         try:
             import redis.asyncio as aioredis
+
             self._redis = aioredis.from_url(self.redis_url)
             pubsub = self._redis.pubsub()
             await pubsub.subscribe(self.channel)
@@ -50,10 +54,14 @@ class AppEventIngester:
             data = json.loads(raw)
 
             return TrajectoryEvent(
-                event_id=data.get("event_id", f"app-{datetime.now(timezone.utc).timestamp()}"),
-                timestamp=datetime.fromisoformat(data["timestamp"])
-                if "timestamp" in data
-                else datetime.now(timezone.utc),
+                event_id=data.get(
+                    "event_id", f"app-{datetime.now(timezone.utc).timestamp()}"
+                ),
+                timestamp=(
+                    datetime.fromisoformat(data["timestamp"])
+                    if "timestamp" in data
+                    else datetime.now(timezone.utc)
+                ),
                 source=EventSource.APP_EVENT,
                 job_id=data.get("job_id", "unknown"),
                 user=data.get("user"),

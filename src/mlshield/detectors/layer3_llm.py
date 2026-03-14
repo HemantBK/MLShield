@@ -1,5 +1,6 @@
 # src/mlshield/detectors/layer3_llm.py
 """Layer 3: LLM Semantic Judge -- contextual analysis of complex security events."""
+
 import httpx
 import json
 import os
@@ -169,7 +170,9 @@ Respond with ONLY a JSON object:
                 threat_type = "unauthorized_access"
                 severity = "high"
                 metric = details.get("metric", "unknown")
-                description = f"GPU anomaly: {metric} z-score {details.get('z_score', 0):.1f}"
+                description = (
+                    f"GPU anomaly: {metric} z-score {details.get('z_score', 0):.1f}"
+                )
                 explanation = (
                     f"GPU metric {metric} deviated significantly from baseline. "
                     f"Combined with ML score {l2_score:.2f}, this suggests abnormal compute usage. "

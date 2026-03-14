@@ -1,5 +1,6 @@
 # tests/test_detectors.py
 """Tests for the Layer 1 static rule engine."""
+
 import sys
 import pytest
 from datetime import datetime

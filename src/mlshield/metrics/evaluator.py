@@ -1,5 +1,6 @@
 # src/mlshield/metrics/evaluator.py
 """Benchmark evaluation utilities for the full cascade."""
+
 import json
 import numpy as np
 from datetime import datetime, timezone
@@ -23,9 +24,11 @@ def event_from_benchmark(raw: dict, step: int) -> TrajectoryEvent:
 
     return TrajectoryEvent(
         event_id=f"{raw.get('job_id', 'unknown')}-step-{step}",
-        timestamp=datetime.fromisoformat(raw["timestamp"])
-        if "timestamp" in raw
-        else datetime.now(timezone.utc),
+        timestamp=(
+            datetime.fromisoformat(raw["timestamp"])
+            if "timestamp" in raw
+            else datetime.now(timezone.utc)
+        ),
         source=source,
         job_id=raw.get("job_id", "unknown"),
         user=raw.get("user"),
@@ -126,7 +129,9 @@ async def evaluate_cascade(
     stats["precision"] = tp / max(tp + fp, 1)
     stats["recall"] = tp / max(tp + fn, 1)
     stats["f1"] = (
-        2 * stats["precision"] * stats["recall"]
+        2
+        * stats["precision"]
+        * stats["recall"]
         / max(stats["precision"] + stats["recall"], 1e-9)
     )
     stats["accuracy"] = (tp + tn) / max(tp + fp + fn + tn, 1)

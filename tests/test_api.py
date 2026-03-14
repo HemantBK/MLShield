@@ -1,5 +1,6 @@
 # tests/test_api.py
 """Tests for the FastAPI REST API."""
+
 import sys
 import pytest
 from datetime import datetime, timezone
@@ -56,8 +57,11 @@ class TestHealthEndpoint:
         response = await client.get("/health")
         data = response.json()
         assert set(data.keys()) == {
-            "status", "version", "uptime_seconds",
-            "total_events_processed", "total_threats_detected",
+            "status",
+            "version",
+            "uptime_seconds",
+            "total_events_processed",
+            "total_threats_detected",
         }
 
 
@@ -65,11 +69,14 @@ class TestEventSubmission:
     """Test POST /api/v1/events endpoint."""
 
     async def test_submit_benign_event(self, client):
-        response = await client.post("/api/v1/events", json={
-            "action": "k8s_get",
-            "resource": "pods/health",
-            "job_id": "test-job",
-        })
+        response = await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_get",
+                "resource": "pods/health",
+                "job_id": "test-job",
+            },
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["is_threat"] is False
@@ -77,11 +84,14 @@ class TestEventSubmission:
         assert "detection_latency_ms" in data
 
     async def test_submit_threat_event(self, client):
-        response = await client.post("/api/v1/events", json={
-            "action": "k8s_get",
-            "resource": "secrets/aws-credentials",
-            "job_id": "test-job",
-        })
+        response = await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "test-job",
+            },
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["is_threat"] is True
@@ -89,45 +99,57 @@ class TestEventSubmission:
         assert data["detected_by_layer"] == 1
 
     async def test_submit_egress_event(self, client):
-        response = await client.post("/api/v1/events", json={
-            "action": "network_egress",
-            "resource": "pods/training-job",
-            "job_id": "test-job",
-            "details": {"destination": "evil.s3.amazonaws.com"},
-        })
+        response = await client.post(
+            "/api/v1/events",
+            json={
+                "action": "network_egress",
+                "resource": "pods/training-job",
+                "job_id": "test-job",
+                "details": {"destination": "evil.s3.amazonaws.com"},
+            },
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["is_threat"] is True
         assert data["threat_type"] == "suspicious_egress"
 
     async def test_submit_with_all_fields(self, client):
-        response = await client.post("/api/v1/events", json={
-            "event_id": "test-evt-123",
-            "timestamp": "2024-01-15T14:30:00",
-            "source": "k8s_audit",
-            "job_id": "my-job",
-            "user": "admin",
-            "action": "k8s_get",
-            "resource": "pods/test",
-            "details": {"path": "/data/test.csv"},
-            "trajectory_step": 5,
-        })
+        response = await client.post(
+            "/api/v1/events",
+            json={
+                "event_id": "test-evt-123",
+                "timestamp": "2024-01-15T14:30:00",
+                "source": "k8s_audit",
+                "job_id": "my-job",
+                "user": "admin",
+                "action": "k8s_get",
+                "resource": "pods/test",
+                "details": {"path": "/data/test.csv"},
+                "trajectory_step": 5,
+            },
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["event_id"] == "test-evt-123"
 
     async def test_submit_minimal_event(self, client):
-        response = await client.post("/api/v1/events", json={
-            "action": "k8s_list",
-            "resource": "pods",
-        })
+        response = await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_list",
+                "resource": "pods",
+            },
+        )
         assert response.status_code == 200
 
     async def test_submit_invalid_event(self, client):
-        response = await client.post("/api/v1/events", json={
-            "resource": "pods/test",
-            # Missing required 'action' field
-        })
+        response = await client.post(
+            "/api/v1/events",
+            json={
+                "resource": "pods/test",
+                # Missing required 'action' field
+            },
+        )
         assert response.status_code == 422
 
 
@@ -137,7 +159,11 @@ class TestBatchSubmission:
     async def test_submit_batch(self, client):
         events = [
             {"action": "k8s_get", "resource": "pods/health", "job_id": "j1"},
-            {"action": "k8s_get", "resource": "secrets/aws-credentials", "job_id": "j2"},
+            {
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "j2",
+            },
             {"action": "k8s_get", "resource": "pods/data-loader", "job_id": "j3"},
         ]
         response = await client.post("/api/v1/events/batch", json={"events": events})
@@ -156,9 +182,17 @@ class TestBatchSubmission:
 
     async def test_batch_all_threats(self, client):
         events = [
-            {"action": "k8s_get", "resource": "secrets/aws-credentials", "job_id": "j1"},
-            {"action": "network_egress", "resource": "pods/job", "job_id": "j2",
-             "details": {"destination": "evil.s3.amazonaws.com"}},
+            {
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "j1",
+            },
+            {
+                "action": "network_egress",
+                "resource": "pods/job",
+                "job_id": "j2",
+                "details": {"destination": "evil.s3.amazonaws.com"},
+            },
         ]
         response = await client.post("/api/v1/events/batch", json={"events": events})
         assert response.status_code == 200
@@ -179,11 +213,14 @@ class TestStatsEndpoint:
     async def test_get_stats_after_events(self, client):
         # Submit some events first
         for _ in range(5):
-            await client.post("/api/v1/events", json={
-                "action": "k8s_get",
-                "resource": "pods/health",
-                "job_id": "test",
-            })
+            await client.post(
+                "/api/v1/events",
+                json={
+                    "action": "k8s_get",
+                    "resource": "pods/health",
+                    "job_id": "test",
+                },
+            )
 
         response = await client.get("/api/v1/stats")
         assert response.status_code == 200
@@ -211,17 +248,23 @@ class TestAlertsEndpoint:
 
     async def test_get_alerts_after_threats(self, client):
         # Generate some threats
-        await client.post("/api/v1/events", json={
-            "action": "k8s_get",
-            "resource": "secrets/aws-credentials",
-            "job_id": "test",
-        })
-        await client.post("/api/v1/events", json={
-            "action": "network_egress",
-            "resource": "pods/job",
-            "job_id": "test",
-            "details": {"destination": "evil.s3.amazonaws.com"},
-        })
+        await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "test",
+            },
+        )
+        await client.post(
+            "/api/v1/events",
+            json={
+                "action": "network_egress",
+                "resource": "pods/job",
+                "job_id": "test",
+                "details": {"destination": "evil.s3.amazonaws.com"},
+            },
+        )
 
         response = await client.get("/api/v1/alerts")
         assert response.status_code == 200
@@ -232,13 +275,33 @@ class TestAlertsEndpoint:
     async def test_get_alerts_with_limit(self, client):
         # Generate threats using known-caught resources
         known_threats = [
-            {"action": "k8s_get", "resource": "secrets/aws-credentials", "job_id": "t1"},
-            {"action": "network_egress", "resource": "pods/job", "job_id": "t2",
-             "details": {"destination": "evil.s3.amazonaws.com"}},
-            {"action": "k8s_get", "resource": "secrets/gcp-credentials", "job_id": "t3"},
-            {"action": "k8s_get", "resource": "persistentvolumeclaims/models-production",
-             "job_id": "t4", "details": {"is_weight_access": True}},
-            {"action": "k8s_get", "resource": "secrets/docker-registry", "job_id": "t5"},
+            {
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "t1",
+            },
+            {
+                "action": "network_egress",
+                "resource": "pods/job",
+                "job_id": "t2",
+                "details": {"destination": "evil.s3.amazonaws.com"},
+            },
+            {
+                "action": "k8s_get",
+                "resource": "secrets/gcp-credentials",
+                "job_id": "t3",
+            },
+            {
+                "action": "k8s_get",
+                "resource": "persistentvolumeclaims/models-production",
+                "job_id": "t4",
+                "details": {"is_weight_access": True},
+            },
+            {
+                "action": "k8s_get",
+                "resource": "secrets/docker-registry",
+                "job_id": "t5",
+            },
         ]
         for event in known_threats:
             await client.post("/api/v1/events", json=event)
@@ -249,11 +312,14 @@ class TestAlertsEndpoint:
         assert len(data["alerts"]) == 2
 
     async def test_get_alerts_filter_severity(self, client):
-        await client.post("/api/v1/events", json={
-            "action": "k8s_get",
-            "resource": "secrets/aws-credentials",
-            "job_id": "test",
-        })
+        await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "test",
+            },
+        )
 
         response = await client.get("/api/v1/alerts?severity=critical")
         assert response.status_code == 200
@@ -262,11 +328,14 @@ class TestAlertsEndpoint:
 
     async def test_get_alerts_summary(self, client):
         # Generate some threats
-        await client.post("/api/v1/events", json={
-            "action": "k8s_get",
-            "resource": "secrets/aws-credentials",
-            "job_id": "test",
-        })
+        await client.post(
+            "/api/v1/events",
+            json={
+                "action": "k8s_get",
+                "resource": "secrets/aws-credentials",
+                "job_id": "test",
+            },
+        )
 
         response = await client.get("/api/v1/alerts/summary")
         assert response.status_code == 200

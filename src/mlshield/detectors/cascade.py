@@ -1,5 +1,6 @@
 # src/mlshield/detectors/cascade.py
 """3-layer cascaded detector adapted from StepShield's HybridGuard."""
+
 import time
 from dataclasses import dataclass
 
@@ -14,16 +15,17 @@ from ..metrics.temporal import TemporalMetrics
 @dataclass
 class DetectionResult:
     """Final output of the cascaded detector."""
+
     event: TrajectoryEvent
     is_threat: bool
-    confidence: float          # 0.0 - 1.0
+    confidence: float  # 0.0 - 1.0
     threat_type: str
     severity: str
     description: str
-    detected_by_layer: int     # 1, 2, or 3
+    detected_by_layer: int  # 1, 2, or 3
     detection_latency_ms: float
-    step_detected: int         # Which trajectory step
-    explanation: str = ""      # Natural language (from Layer 3)
+    step_detected: int  # Which trajectory step
+    explanation: str = ""  # Natural language (from Layer 3)
 
 
 class CascadedDetector:

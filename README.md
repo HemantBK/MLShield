@@ -27,7 +27,7 @@ App Events ──────┘                               │  Layer 2: LST
 
 ```bash
 # Clone and start
-git clone https://github.com/your-org/mlshield.git
+git clone https://github.com/HemantBK/mlshield.git
 cd mlshield
 docker compose up --build
 
@@ -156,6 +156,16 @@ helm install mlshield deploy/helm/mlshield/ \
   --set llm.apiKey=sk-ant-...
 ```
 
+## References
+
+This project builds on ideas from the following work:
+
+- **StepShield** -- Warner et al. "StepShield: Cascaded Anomaly Detection for Agentic AI Trajectories" ([arXiv:2601.22136](https://arxiv.org/abs/2601.22136)). MLShield adapts StepShield's HybridGuard cascaded architecture and Early Intervention Rate metric from code-agent trajectories to ML infrastructure event sequences.
+
+- **Warr et al. 2025** -- "Detecting Model Weight Theft via Inference Output Verification" ([arXiv:2511.02620](https://arxiv.org/abs/2511.02620)). MLShield complements inference-output verification by covering non-inference exfiltration channels: insider threats, side channels, and compromised infrastructure.
+
+- **ShadowRay** -- A real-world attack campaign targeting Ray clusters in ML infrastructure, used as the basis for one of MLShield's benchmark attack scenarios.
+
 ## License
 
-Apache 2.0
+MIT

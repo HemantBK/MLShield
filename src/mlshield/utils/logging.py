@@ -1,5 +1,6 @@
 # src/mlshield/utils/logging.py
 """Structured logging configuration for MLShield."""
+
 import structlog
 import logging
 import sys

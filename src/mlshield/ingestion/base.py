@@ -1,5 +1,6 @@
 # src/mlshield/ingestion/base.py
 """Abstract ingestion interface for MLShield data sources."""
+
 from abc import ABC, abstractmethod
 from typing import AsyncGenerator
 from .event_bus import TrajectoryEvent

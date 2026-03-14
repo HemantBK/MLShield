@@ -1,5 +1,6 @@
 # src/mlshield/utils/config.py
 """Configuration management for MLShield."""
+
 import os
 import yaml
 from dataclasses import dataclass
@@ -10,6 +11,7 @@ from typing import Optional
 @dataclass
 class MLShieldConfig:
     """Main configuration for MLShield."""
+
     # Spec engine
     spec_path: str = "configs/default_specs.yaml"
 
