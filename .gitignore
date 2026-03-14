@@ -48,3 +48,4 @@ benchmark/data/mlshield_benchmark_v1.json
 
 # Docker
 .docker/
+.claude
