@@ -12,7 +12,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/mlshield.git
+git clone https://github.com/HemantBK/MLShield.git
 cd mlshield
 
 # Create virtual environment
